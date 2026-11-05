@@ -749,7 +749,8 @@
       canvas,
       antialias: true,
       alpha: true,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
+      logarithmicDepthBuffer: true
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1497,8 +1498,14 @@
       { x: 38.0, w: 5.2, name: "East Metropolitan Expressway", minZ: -42, maxZ: 42 }
     ];
 
-    // Road Markings: Solid, crisp, non-fading depth-offset materials (always render close & far)
-    const roadMat = standard(0x0e171f, { roughness: 0.82 });
+    // High-Poly Road & Curb Materials
+    const roadMat = standard(0x101a22, { roughness: 0.85, metalness: 0.08 });
+    const roadBaseMat = standard(0x0a1014, { roughness: 0.95 });
+    const curbMat = standard(0x384a56, { roughness: 0.65, metalness: 0.15 });
+    const curbTopMat = standard(0x4a5d6a, { roughness: 0.60, metalness: 0.12 });
+    const gutterMat = standard(0x080d11, { roughness: 0.92, metalness: 0.10 });
+    const sidewalkMat = standard(0x1c2b36, { roughness: 0.82, metalness: 0.06 });
+
     const yellowMarkingMat = new THREE.MeshBasicMaterial({
       color: 0xffbe3b,
       polygonOffset: true,
@@ -1512,164 +1519,324 @@
       polygonOffsetUnits: -4.0
     });
 
-    // Render Asphalt Pavement Ribbons (Top surface at y = 0.050)
-    // Avenues cleanly connect into the Roundabout at radius 9.5m (NO straight roads cutting through!)
+    // Helper: Build Raised Multi-Layer Street Ribbon with Granite Curbs & Gutters
     EW_STREETS.forEach((st) => {
-      if (Math.abs(st.z) < 1.0) {
-        // Grand Central Boulevard: Split around the roundabout
-        const wLen = -9.5 - st.minX;
-        addBox(cityBase, wLen, 0.05, st.w, roadMat, st.minX + wLen / 2, 0.025, st.z, { cast: false });
-        const eLen = st.maxX - 9.5;
-        addBox(cityBase, eLen, 0.05, st.w, roadMat, 9.5 + eLen / 2, 0.025, st.z, { cast: false });
+      const isCenter = Math.abs(st.z) < 1.0;
+      const segs = isCenter
+        ? [
+            { minX: st.minX, maxX: -9.5 },
+            { minX: 9.5, maxX: st.maxX }
+          ]
+        : [{ minX: st.minX, maxX: st.maxX }];
 
-        // Double yellow center dividers stopping 1.5m before roundabout
-        addBox(cityBase, wLen - 2.5, 0.015, 0.12, yellowMarkingMat, st.minX + (wLen - 2.5) / 2, 0.058, st.z - 0.10, { cast: false });
-        addBox(cityBase, wLen - 2.5, 0.015, 0.12, yellowMarkingMat, st.minX + (wLen - 2.5) / 2, 0.058, st.z + 0.10, { cast: false });
-        addBox(cityBase, eLen - 2.5, 0.015, 0.12, yellowMarkingMat, 10.75 + (eLen - 2.5) / 2, 0.058, st.z - 0.10, { cast: false });
-        addBox(cityBase, eLen - 2.5, 0.015, 0.12, yellowMarkingMat, 10.75 + (eLen - 2.5) / 2, 0.058, st.z + 0.10, { cast: false });
-      } else {
-        const len = st.maxX - st.minX;
-        const cx = (st.minX + st.maxX) / 2;
+      segs.forEach((seg) => {
+        const len = seg.maxX - seg.minX;
+        const cx = (seg.minX + seg.maxX) / 2;
+
+        // 1. Road Sub-base Layer (dark gravel foundation)
+        addBox(cityBase, len, 0.03, st.w + 0.6, roadBaseMat, cx, 0.015, st.z, { cast: false });
+
+        // 2. Main Asphalt Pavement (top at y = 0.050)
         addBox(cityBase, len, 0.05, st.w, roadMat, cx, 0.025, st.z, { cast: false });
-        addBox(cityBase, len - 2.5, 0.015, 0.12, yellowMarkingMat, cx, 0.058, st.z - 0.10, { cast: false });
-        addBox(cityBase, len - 2.5, 0.015, 0.12, yellowMarkingMat, cx, 0.058, st.z + 0.10, { cast: false });
-      }
-    });
 
-    NS_STREETS.forEach((st) => {
-      if (Math.abs(st.x) < 1.0) {
-        // Grand Central Avenue: Split around the roundabout
-        const nLen = -9.5 - st.minZ;
-        addBox(cityBase, st.w, 0.05, nLen, roadMat, st.x, 0.025, st.minZ + nLen / 2, { cast: false });
-        const sLen = st.maxZ - 9.5;
-        addBox(cityBase, st.w, 0.05, sLen, roadMat, st.x, 0.025, 9.5 + sLen / 2, { cast: false });
+        // 3. Dark Drainage Gutters along both road edges
+        addBox(cityBase, len, 0.052, 0.22, gutterMat, cx, 0.026, st.z - st.w / 2 + 0.11, { cast: false });
+        addBox(cityBase, len, 0.052, 0.22, gutterMat, cx, 0.026, st.z + st.w / 2 - 0.11, { cast: false });
 
-        // Double yellow center dividers stopping 1.5m before roundabout
-        addBox(cityBase, 0.12, 0.015, nLen - 2.5, yellowMarkingMat, st.x - 0.10, 0.058, st.minZ + (nLen - 2.5) / 2, { cast: false });
-        addBox(cityBase, 0.12, 0.015, nLen - 2.5, yellowMarkingMat, st.x + 0.10, 0.058, st.minZ + (nLen - 2.5) / 2, { cast: false });
-        addBox(cityBase, 0.12, 0.015, sLen - 2.5, yellowMarkingMat, st.x - 0.10, 0.058, 10.75 + (sLen - 2.5) / 2, { cast: false });
-        addBox(cityBase, 0.12, 0.015, sLen - 2.5, yellowMarkingMat, st.x + 0.10, 0.058, 10.75 + (sLen - 2.5) / 2, { cast: false });
-      } else {
-        const len = st.maxZ - st.minZ;
-        const cz = (st.minZ + st.maxZ) / 2;
-        addBox(cityBase, st.w, 0.05, len, roadMat, st.x, 0.025, cz, { cast: false });
-        addBox(cityBase, 0.12, 0.015, len - 2.5, yellowMarkingMat, st.x - 0.10, 0.058, cz, { cast: false });
-        addBox(cityBase, 0.12, 0.015, len - 2.5, yellowMarkingMat, st.x + 0.10, 0.058, cz, { cast: false });
-      }
-    });
+        // 4. Raised Granite Curb Stones (top at y = 0.10, bevel edge at y = 0.105)
+        addBox(cityBase, len, 0.08, 0.20, curbMat, cx, 0.06, st.z - st.w / 2 - 0.10, { cast: false });
+        addBox(cityBase, len, 0.08, 0.20, curbMat, cx, 0.06, st.z + st.w / 2 + 0.10, { cast: false });
+        addBox(cityBase, len, 0.01, 0.16, curbTopMat, cx, 0.101, st.z - st.w / 2 - 0.10, { cast: false });
+        addBox(cityBase, len, 0.01, 0.16, curbTopMat, cx, 0.101, st.z + st.w / 2 + 0.10, { cast: false });
 
-    // Dashed White Lane Dividers (excluding intersections & roundabout)
-    for (let x = -38; x <= 56; x += 4.0) {
-      if (Math.abs(x) > 10.5 && Math.abs(x - 13) > 3.2 && Math.abs(x + 13) > 3.2 && Math.abs(x + 38) > 3.2 && Math.abs(x - 38) > 3.2) {
-        EW_STREETS.forEach((st) => {
-          addBox(cityBase, 1.8, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z - st.w * 0.28, { cast: false });
-          addBox(cityBase, 1.8, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z + st.w * 0.28, { cast: false });
+        // 5. Double Yellow Center Divider (stopping safely before intersections and roundabout)
+        const lineLen = Math.max(1.0, len - 3.5);
+        const lineCx = isCenter && seg.minX > 0 ? cx + 1.0 : isCenter ? cx - 1.0 : cx;
+        addBox(cityBase, lineLen, 0.015, 0.12, yellowMarkingMat, lineCx, 0.058, st.z - 0.10, { cast: false });
+        addBox(cityBase, lineLen, 0.015, 0.12, yellowMarkingMat, lineCx, 0.058, st.z + 0.10, { cast: false });
+
+        // Storm drain grates along the curb
+        [-1, 1].forEach((dir) => {
+          const drainX = cx + (dir * (len * 0.35));
+          if (Math.abs(drainX) > 11.0 && Math.abs(drainX) < 48.0) {
+            addBox(cityBase, 0.55, 0.015, 0.22, MAT.metalDark, drainX, 0.054, st.z - st.w / 2 + 0.13, { cast: false });
+            addBox(cityBase, 0.55, 0.015, 0.22, MAT.metalDark, drainX, 0.054, st.z + st.w / 2 - 0.13, { cast: false });
+          }
         });
-      }
-    }
-    for (let z = -40; z <= 40; z += 4.0) {
-      if (Math.abs(z) > 10.5 && Math.abs(z - 14) > 3.2 && Math.abs(z + 14) > 3.2 && Math.abs(z + 42) > 3.2 && Math.abs(z - 42) > 3.2) {
-        NS_STREETS.forEach((st) => {
-          addBox(cityBase, 0.12, 0.015, 1.8, whiteMarkingMat, st.x - st.w * 0.28, 0.058, z, { cast: false });
-          addBox(cityBase, 0.12, 0.015, 1.8, whiteMarkingMat, st.x + st.w * 0.28, 0.058, z, { cast: false });
-        });
-      }
-    }
-
-    // Pedestrian Zebra Crosswalks only at regular 4-way intersections
-    NS_STREETS.forEach((ns) => {
-      EW_STREETS.forEach((ew) => {
-        if (Math.abs(ns.x) < 1.0 && Math.abs(ew.z) < 1.0) return; // Skip center roundabout
-        for (let s = -3; s <= 3; s++) {
-          addBox(cityBase, 0.38, 0.015, 1.4, whiteMarkingMat, ns.x + s * 0.65, 0.058, ew.z + ew.w * 0.5 + 0.9, { cast: false });
-          addBox(cityBase, 0.38, 0.015, 1.4, whiteMarkingMat, ns.x + s * 0.65, 0.058, ew.z - ew.w * 0.5 - 0.9, { cast: false });
-          addBox(cityBase, 1.4, 0.015, 0.38, whiteMarkingMat, ns.x + ns.w * 0.5 + 0.9, 0.058, ew.z + s * 0.65, { cast: false });
-          addBox(cityBase, 1.4, 0.015, 0.38, whiteMarkingMat, ns.x - ns.w * 0.5 - 0.9, 0.058, ew.z + s * 0.65, { cast: false });
-        }
       });
     });
 
-    // 4 Crosswalks safely set back on approaching avenues before the Roundabout (at distance 12.5m)
-    for (let s = -3; s <= 3; s++) {
-      addBox(cityBase, 0.42, 0.015, 1.5, whiteMarkingMat, s * 0.72, 0.058, -12.5, { cast: false });
-      addBox(cityBase, 0.42, 0.015, 1.5, whiteMarkingMat, s * 0.72, 0.058, 12.5, { cast: false });
-      addBox(cityBase, 1.5, 0.015, 0.42, whiteMarkingMat, -12.5, 0.058, s * 0.72, { cast: false });
-      addBox(cityBase, 1.5, 0.015, 0.42, whiteMarkingMat, 12.5, 0.058, s * 0.72, { cast: false });
+    NS_STREETS.forEach((st) => {
+      const isCenter = Math.abs(st.x) < 1.0;
+      const segs = isCenter
+        ? [
+            { minZ: st.minZ, maxZ: -9.5 },
+            { minZ: 9.5, maxZ: st.maxZ }
+          ]
+        : [{ minZ: st.minZ, maxZ: st.maxZ }];
+
+      segs.forEach((seg) => {
+        const len = seg.maxZ - seg.minZ;
+        const cz = (seg.minZ + seg.maxZ) / 2;
+
+        // 1. Road Sub-base Layer
+        addBox(cityBase, st.w + 0.6, 0.03, len, roadBaseMat, st.x, 0.015, cz, { cast: false });
+
+        // 2. Main Asphalt Pavement
+        addBox(cityBase, st.w, 0.05, len, roadMat, st.x, 0.025, cz, { cast: false });
+
+        // 3. Dark Drainage Gutters along both road edges
+        addBox(cityBase, 0.22, 0.052, len, gutterMat, st.x - st.w / 2 + 0.11, 0.026, cz, { cast: false });
+        addBox(cityBase, 0.22, 0.052, len, gutterMat, st.x + st.w / 2 - 0.11, 0.026, cz, { cast: false });
+
+        // 4. Raised Granite Curb Stones
+        addBox(cityBase, 0.20, 0.08, len, curbMat, st.x - st.w / 2 - 0.10, 0.06, cz, { cast: false });
+        addBox(cityBase, 0.20, 0.08, len, curbMat, st.x + st.w / 2 + 0.10, 0.06, cz, { cast: false });
+        addBox(cityBase, 0.16, 0.01, len, curbTopMat, st.x - st.w / 2 - 0.10, 0.101, cz, { cast: false });
+        addBox(cityBase, 0.16, 0.01, len, curbTopMat, st.x + st.w / 2 + 0.10, 0.101, cz, { cast: false });
+
+        // 5. Double Yellow Center Divider
+        const lineLen = Math.max(1.0, len - 3.5);
+        const lineCz = isCenter && seg.minZ > 0 ? cz + 1.0 : isCenter ? cz - 1.0 : cz;
+        addBox(cityBase, 0.12, 0.015, lineLen, yellowMarkingMat, st.x - 0.10, 0.058, lineCz, { cast: false });
+        addBox(cityBase, 0.12, 0.015, lineLen, yellowMarkingMat, st.x + 0.10, 0.058, lineCz, { cast: false });
+
+        // Cast iron manhole covers in outer lanes
+        [-1, 1].forEach((dir) => {
+          const manZ = cz + (dir * (len * 0.28));
+          if (Math.abs(manZ) > 11.0 && Math.abs(manZ) < 40.0) {
+            addCylinder(cityBase, 0.44, 0.44, 0.016, 16, MAT.metalDark, st.x + 1.2 * dir, 0.056, manZ, { cast: false });
+          }
+        });
+      });
+    });
+
+    // Dashed White Lane Dividers (cleanly spaced, excluding intersections & roundabout)
+    for (let x = -36; x <= 54; x += 5.5) {
+      if (Math.abs(x) > 11.5 && Math.abs(x - 13) > 3.8 && Math.abs(x + 13) > 3.8 && Math.abs(x + 38) > 3.8 && Math.abs(x - 38) > 3.8) {
+        EW_STREETS.forEach((st) => {
+          addBox(cityBase, 2.2, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z - st.w * 0.28, { cast: false });
+          addBox(cityBase, 2.2, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z + st.w * 0.28, { cast: false });
+        });
+      }
+    }
+    for (let z = -38; z <= 38; z += 5.5) {
+      if (Math.abs(z) > 11.5 && Math.abs(z - 14) > 3.8 && Math.abs(z + 14) > 3.8 && Math.abs(z + 42) > 3.8 && Math.abs(z - 42) > 3.8) {
+        NS_STREETS.forEach((st) => {
+          addBox(cityBase, 0.12, 0.015, 2.2, whiteMarkingMat, st.x - st.w * 0.28, 0.058, z, { cast: false });
+          addBox(cityBase, 0.12, 0.015, 2.2, whiteMarkingMat, st.x + st.w * 0.28, 0.058, z, { cast: false });
+        });
+      }
     }
 
+    // High-Quality Pedestrian Crossings (Set back safely, NO visual clutter, ZERO collisions)
+    // 1. Outer District Major Crossings (only at primary civic intersections)
+    [
+      { x: -38.0, z: -14.0 }, { x: -38.0, z: 14.0 },
+      { x: 38.0, z: -14.0 }, { x: 38.0, z: 14.0 },
+      { x: -13.0, z: -42.0 }, { x: 13.0, z: -42.0 },
+      { x: -13.0, z: 42.0 }, { x: 13.0, z: 42.0 }
+    ].forEach((pt) => {
+      // Clean zebra crossing with stop bar
+      for (let s = -2; s <= 2; s++) {
+        addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, pt.x + s * 0.75, 0.058, pt.z + 3.8, { cast: false });
+        addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, pt.x + s * 0.75, 0.058, pt.z - 3.8, { cast: false });
+      }
+      // Transverse stop line
+      addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.058, pt.z + 4.9, { cast: false });
+      addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.058, pt.z - 4.9, { cast: false });
+    });
+
+    // 2. Safe Roundabout Approach Crossings (Set back 14.5m with Raised Pedestrian Refuge Islands)
+    [
+      { axis: 'z', x: 0, z: -14.5, angle: 0 },
+      { axis: 'z', x: 0, z: 14.5, angle: Math.PI },
+      { axis: 'x', x: -14.5, z: 0, angle: -Math.PI / 2 },
+      { axis: 'x', x: 14.5, z: 0, angle: Math.PI / 2 }
+    ].forEach((app) => {
+      if (app.axis === 'z') {
+        // Center raised pedestrian refuge island (Mittelinsel)
+        addBox(cityBase, 0.85, 0.12, 2.6, curbMat, app.x, 0.06, app.z, { cast: false });
+        addBox(cityBase, 0.75, 0.015, 2.4, MAT.concrete, app.x, 0.122, app.z, { cast: false });
+        // Illuminated amber safety bollards
+        [-1.0, 1.0].forEach((bz) => {
+          addCylinder(cityBase, 0.07, 0.07, 0.7, 8, MAT.steelDark, app.x, 0.45, app.z + bz, { cast: false });
+          addSphere(cityBase, 0.08, basicGlow(0xffbe3b, 1.6), app.x, 0.82, app.z + bz);
+        });
+        // Flanking zebra stripes
+        [-1, 1].forEach((side) => {
+          const sideX = app.x + side * 1.85;
+          for (let s = -1; s <= 1; s++) {
+            addBox(cityBase, 0.40, 0.015, 1.8, whiteMarkingMat, sideX + s * 0.65, 0.058, app.z, { cast: false });
+          }
+        });
+        // Stop bar before crossing
+        const stopZ = app.z + (app.z > 0 ? 1.6 : -1.6);
+        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x - 1.85, 0.058, stopZ, { cast: false });
+        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x + 1.85, 0.058, stopZ, { cast: false });
+      } else {
+        // Center raised pedestrian refuge island (Mittelinsel)
+        addBox(cityBase, 2.6, 0.12, 0.85, curbMat, app.x, 0.06, app.z, { cast: false });
+        addBox(cityBase, 2.4, 0.015, 0.75, MAT.concrete, app.x, 0.122, app.z, { cast: false });
+        // Illuminated amber safety bollards
+        [-1.0, 1.0].forEach((bx) => {
+          addCylinder(cityBase, 0.07, 0.07, 0.7, 8, MAT.steelDark, app.x + bx, 0.45, app.z, { cast: false });
+          addSphere(cityBase, 0.08, basicGlow(0xffbe3b, 1.6), app.x + bx, 0.82, app.z);
+        });
+        // Flanking zebra stripes
+        [-1, 1].forEach((side) => {
+          const sideZ = app.z + side * 1.85;
+          for (let s = -1; s <= 1; s++) {
+            addBox(cityBase, 1.8, 0.015, 0.40, whiteMarkingMat, app.x, 0.058, sideZ + s * 0.65, { cast: false });
+          }
+        });
+        // Stop bar before crossing
+        const stopX = app.x + (app.x > 0 ? 1.6 : -1.6);
+        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.058, app.z - 1.85, { cast: false });
+        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.058, app.z + 1.85, { cast: false });
+      }
+    });
+
     // ============================================================
-    // CENTRAL CIVIC ROUNDABOUT (Flawless European High-Tech Centerpiece)
+    // CENTRAL CIVIC ROUNDABOUT (European High-Tech Landmark Plaza)
     // ============================================================
     const plaza = new THREE.Group();
 
-    // 1. Circular Roadway Ring (inner radius 5.2m, outer radius 9.5m)
-    const roundaboutRoadGeo = new THREE.RingGeometry(5.2, 9.5, 64);
+    // 1. Outer Circular Paved Sidewalk & Granite Curb Ring (Radius 9.4m to 11.4m)
+    const outerSidewalkGeo = new THREE.RingGeometry(9.4, 11.4, 64);
+    outerSidewalkGeo.rotateX(-Math.PI / 2);
+    const outerSidewalk = new THREE.Mesh(outerSidewalkGeo, MAT.concrete);
+    outerSidewalk.position.y = 0.082;
+    outerSidewalk.receiveShadow = true;
+    plaza.add(outerSidewalk);
+
+    const outerCurbGeo = new THREE.RingGeometry(9.32, 9.46, 64);
+    outerCurbGeo.rotateX(-Math.PI / 2);
+    const outerCurb = new THREE.Mesh(outerCurbGeo, curbMat);
+    outerCurb.position.y = 0.095;
+    plaza.add(outerCurb);
+
+    // 4 Modern LED Promenade Light Lanterns on the Outer Sidewalk
+    [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4].forEach((ang) => {
+      const lx = Math.cos(ang) * 10.4;
+      const lz = Math.sin(ang) * 10.4;
+      const pole = new THREE.Group();
+      pole.position.set(lx, 0.08, lz);
+      addCylinder(pole, 0.06, 0.08, 3.4, 8, MAT.steelDark, 0, 1.7, 0);
+      addBox(pole, 0.15, 0.08, 0.65, MAT.steel, 0, 3.35, -0.22);
+      addBox(pole, 0.12, 0.04, 0.45, basicGlow(0xffebc6, 1.4), 0, 3.30, -0.22, { cast: false });
+      pole.lookAt(0, 0.08, 0);
+      plaza.add(pole);
+    });
+
+    // 2. Circular Carriageway Roadway Ring (inner radius 5.5m, outer radius 9.4m)
+    const roundaboutRoadGeo = new THREE.RingGeometry(5.5, 9.4, 64);
     roundaboutRoadGeo.rotateX(-Math.PI / 2);
     const roundaboutRoad = new THREE.Mesh(roundaboutRoadGeo, roadMat);
-    roundaboutRoad.position.y = 0.051;
+    roundaboutRoad.position.y = 0.052;
     roundaboutRoad.receiveShadow = true;
     plaza.add(roundaboutRoad);
 
-    // Circular Dashed White Lane Divider
-    const laneDividerGeo = new THREE.RingGeometry(7.3, 7.42, 64);
+    // Drainage gutter strips along roundabout inner and outer edges
+    const innerGutterGeo = new THREE.RingGeometry(5.5, 5.72, 64);
+    innerGutterGeo.rotateX(-Math.PI / 2);
+    const innerGutter = new THREE.Mesh(innerGutterGeo, gutterMat);
+    innerGutter.position.y = 0.053;
+    plaza.add(innerGutter);
+
+    const outerGutterGeo = new THREE.RingGeometry(9.18, 9.4, 64);
+    outerGutterGeo.rotateX(-Math.PI / 2);
+    const outerGutter = new THREE.Mesh(outerGutterGeo, gutterMat);
+    outerGutter.position.y = 0.053;
+    plaza.add(outerGutter);
+
+    // Circular Dashed White Lane Divider at radius 7.45m
+    const laneDividerGeo = new THREE.RingGeometry(7.40, 7.52, 64);
     laneDividerGeo.rotateX(-Math.PI / 2);
     const laneDivider = new THREE.Mesh(laneDividerGeo, whiteMarkingMat);
     laneDivider.position.y = 0.058;
     plaza.add(laneDivider);
 
-    // 2. Central Island Raised Curb & Grass Lawn (Radius 5.0m)
-    addCylinder(plaza, 5.2, 5.4, 0.22, 64, MAT.concreteDark, 0, 0.11, 0, { cast: false });
-    const islandGrass = new THREE.Mesh(new THREE.CircleGeometry(4.9, 64), MAT.grass);
+    // Yield "shark-teeth" markings at 4 roundabout avenue entry mouths (r = 9.4m)
+    [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2].forEach((rot) => {
+      const yieldGroup = new THREE.Group();
+      yieldGroup.position.set(0, 0.058, 0);
+      yieldGroup.rotation.y = rot;
+      for (let y = -2; y <= 2; y++) {
+        addBox(yieldGroup, 0.28, 0.015, 0.28, whiteMarkingMat, y * 0.55, 0, 9.38, { cast: false });
+      }
+      plaza.add(yieldGroup);
+    });
+
+    // 3. Central Island: Raised Granite Curb Wall & Manicured Lawn (Radius 5.5m)
+    addCylinder(plaza, 5.5, 5.7, 0.26, 64, curbMat, 0, 0.13, 0, { cast: false });
+    const islandGrass = new THREE.Mesh(new THREE.CircleGeometry(5.42, 64), MAT.grass);
     islandGrass.rotation.x = -Math.PI / 2;
-    islandGrass.position.y = 0.225;
+    islandGrass.position.y = 0.262;
     plaza.add(islandGrass);
 
-    // Circular Water Fountain & Reflection Basin
-    addCylinder(plaza, 2.7, 2.9, 0.28, 48, MAT.concrete, 0, 0.26, 0, { cast: false });
-    const fountainWater = new THREE.Mesh(new THREE.CircleGeometry(2.55, 48), basicGlow(0x38bdf8, 0.65));
-    fountainWater.rotation.x = -Math.PI / 2;
-    fountainWater.position.y = 0.395;
-    plaza.add(fountainWater);
+    // Low ornamental decorative boxwood hedges forming a neat concentric border
+    const hedgeRing = new THREE.Mesh(new THREE.TorusGeometry(4.75, 0.14, 6, 48), MAT.leafA);
+    hedgeRing.rotation.x = Math.PI / 2;
+    hedgeRing.position.y = 0.35;
+    plaza.add(hedgeRing);
 
-    // Elevated Holographic Monument Pedestal in Center
-    addCylinder(plaza, 1.25, 1.45, 0.44, 32, MAT.metalDark, 0, 0.58, 0);
-    const pedestalRing = new THREE.Mesh(new THREE.TorusGeometry(1.28, 0.03, 8, 48), basicGlow(0x69edff, 0.85));
+    // 4. Elegant Cascading Two-Tiered Stone Water Fountain
+    // Tier 1: Ground Reflection Basin (Radius 3.2m)
+    addCylinder(plaza, 3.2, 3.35, 0.32, 48, MAT.concrete, 0, 0.42, 0, { cast: false });
+    const fountainWaterLower = new THREE.Mesh(new THREE.CircleGeometry(3.05, 48), basicGlow(0x38bdf8, 0.75));
+    fountainWaterLower.rotation.x = -Math.PI / 2;
+    fountainWaterLower.position.y = 0.575;
+    plaza.add(fountainWaterLower);
+
+    // Tier 2: Elevated Center Basin (Radius 1.6m)
+    addCylinder(plaza, 1.6, 1.75, 0.48, 32, MAT.concreteDark, 0, 0.82, 0, { cast: false });
+    const fountainWaterUpper = new THREE.Mesh(new THREE.CircleGeometry(1.48, 32), basicGlow(0x6fe3a8, 0.85));
+    fountainWaterUpper.rotation.x = -Math.PI / 2;
+    fountainWaterUpper.position.y = 1.065;
+    plaza.add(fountainWaterUpper);
+
+    // 5. Elevated Kinetic Gyroscopic Monument on Sculpted Pedestal
+    addCylinder(plaza, 0.95, 1.15, 0.55, 24, MAT.metalDark, 0, 1.34, 0);
+    const pedestalRing = new THREE.Mesh(new THREE.TorusGeometry(0.98, 0.025, 8, 48), basicGlow(0x69edff, 0.95));
     pedestalRing.rotation.x = Math.PI / 2;
-    pedestalRing.position.y = 0.82;
+    pedestalRing.position.y = 1.62;
     plaza.add(pedestalRing);
 
     const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.68, 1.25, 4.8, 24, 1, true),
-      basicGlow(0x55e9ff, 0.05)
+      new THREE.CylinderGeometry(0.45, 0.95, 4.5, 24, 1, true),
+      basicGlow(0x55e9ff, 0.06)
     );
-    beam.position.y = 3.1;
+    beam.position.y = 3.8;
     plaza.add(beam);
 
     const holoCore = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.88, 1),
-      new THREE.MeshBasicMaterial({ color: 0x9df6ff, wireframe: true, transparent: true, opacity: 0.88 })
+      new THREE.IcosahedronGeometry(0.75, 1),
+      new THREE.MeshBasicMaterial({ color: 0x9df6ff, wireframe: true, transparent: true, opacity: 0.92 })
     );
-    holoCore.position.y = 3.2;
+    holoCore.position.y = 3.6;
     plaza.add(holoCore);
     animated.holoCore = holoCore;
 
     for (let i = 0; i < 3; i += 1) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(1.25 + i * 0.25, 0.015, 6, 64),
-        basicGlow(i === 1 ? 0xffd37a : 0x4be4ff, 0.7 - i * 0.12)
+        new THREE.TorusGeometry(1.15 + i * 0.22, 0.016, 6, 64),
+        basicGlow(i === 1 ? 0xffd37a : 0x4be4ff, 0.75 - i * 0.12)
       );
-      ring.position.y = 3.2;
+      ring.position.y = 3.6;
       ring.rotation.x = (i * Math.PI) / 3;
       ring.rotation.y = (i * Math.PI) / 4;
       plaza.add(ring);
       animated.holoRings.push(ring);
     }
 
-    // 4 Elegant Cypress Trees on the Roundabout Island
+    // 4 Symmetrically Sculpted Cypress Trees on the Grass Lawn (Safe r = 4.2m)
     [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4].forEach((ang) => {
-      const tx = Math.cos(ang) * 3.8;
-      const tz = Math.sin(ang) * 3.8;
-      addTree(tx, tz, 0.9, 1);
+      const tx = Math.cos(ang) * 4.2;
+      const tz = Math.sin(ang) * 4.2;
+      addTree(tx, tz, 0.85, 1);
+      // Ground-recessed warm LED uplights illuminating tree canopies
+      addSphere(plaza, 0.09, basicGlow(0xffd37a, 1.4), tx * 0.88, 0.28, tz * 0.88);
     });
 
     // Ambient floating monument energy particles
@@ -1677,9 +1844,9 @@
     const dustPositions = new Float32Array(dustCount * 3);
     for (let i = 0; i < dustCount; i += 1) {
       const angle = Math.random() * Math.PI * 2;
-      const radius = 0.4 + Math.random() * 3.4;
+      const radius = 0.3 + Math.random() * 2.8;
       dustPositions[i * 3] = Math.cos(angle) * radius;
-      dustPositions[i * 3 + 1] = 0.9 + Math.random() * 4.2;
+      dustPositions[i * 3 + 1] = 1.2 + Math.random() * 4.0;
       dustPositions[i * 3 + 2] = Math.sin(angle) * radius;
     }
     const dustGeometry = new THREE.BufferGeometry();
@@ -1690,7 +1857,7 @@
         color: 0x8ed9ee,
         size: 0.05,
         transparent: true,
-        opacity: 0.48,
+        opacity: 0.52,
         depthWrite: false,
         sizeAttenuation: true,
         blending: THREE.AdditiveBlending
@@ -2887,32 +3054,44 @@
     dockGroup.position.set(-25.0, 0.05, -19.5);
     CITY.add(dockGroup);
 
-    // 1. Factory Loading Bay Gate (Tor) on south facade
+    // 1. Factory Loading Bay Gate (Architectural Roll-Up Portal on south facade)
     const torFrame = new THREE.Group();
     torFrame.position.set(0, 0, -0.6);
-    addBox(torFrame, 3.6, 3.8, 0.45, MAT.steelDark, 0, 1.9, 0);
-    // Open roll-up portal (empty interior opening)
-    addBox(torFrame, 0.45, 3.8, 0.5, MAT.steel, -1.6, 1.9, 0);
-    addBox(torFrame, 0.45, 3.8, 0.5, MAT.steel, 1.6, 1.9, 0);
-    addBox(torFrame, 3.6, 0.6, 0.55, MAT.steel, 0, 3.5, 0);
-    addBox(torFrame, 3.6, 0.12, 0.56, basicGlow(0xffc35f, 0.95), 0, 3.15, 0, { cast: false }); // Hazard striping
-    addBox(torFrame, 0.1, 0.1, 3.2, basicGlow(0x6fe3a8, 0.9), 0, 3.6, 0.28, { cast: false }); // Green status light
+    // Hollow Deep Loading Bay Tunnel (depth 3.6m into factory)
+    addBox(torFrame, 0.40, 3.8, 3.6, MAT.steelDark, -1.85, 1.9, -1.8);
+    addBox(torFrame, 0.40, 3.8, 3.6, MAT.steelDark, 1.85, 1.9, -1.8);
+    addBox(torFrame, 4.10, 0.35, 3.6, MAT.steelDark, 0, 3.75, -1.8);
+    addBox(torFrame, 4.10, 3.8, 0.25, standard(0x0e161c), 0, 1.9, -3.6);
+    addBox(torFrame, 3.4, 0.08, 3.6, MAT.concreteDark, 0, 0.04, -1.8, { cast: false });
+    // Coiled industrial roll-up shutter drum & slatted door (partially raised)
+    addCylinder(torFrame, 0.26, 0.26, 3.3, 16, MAT.metalDark, 0, 3.35, 0, { rz: Math.PI / 2 });
+    addBox(torFrame, 3.3, 0.75, 0.08, standard(0x2b3e4c, { metalness: 0.65 }), 0, 2.9, 0);
+    // Yellow/black diagonal safety chevron stripe header
+    addBox(torFrame, 3.7, 0.16, 0.45, basicGlow(0xffc35f, 0.95), 0, 3.45, 0.18, { cast: false });
+    // Heavy rubber dock bumpers on side jambs
+    addBox(torFrame, 0.26, 1.35, 0.26, MAT.metalDark, -1.9, 0.7, 0.15);
+    addBox(torFrame, 0.26, 1.35, 0.26, MAT.metalDark, 1.9, 0.7, 0.15);
+    // Overhead high-bay dock floodlight illuminating the bay apron
+    addBox(torFrame, 0.45, 0.15, 0.25, MAT.steel, 0, 3.9, 0.3);
+    addBox(torFrame, 0.38, 0.04, 0.20, basicGlow(0xfff0d0, 1.4), 0, 3.82, 0.3, { cast: false });
+    // Automated dock beacon (green operational light)
+    addSphere(torFrame, 0.11, basicGlow(0x6fe3a8, 1.8), 1.9, 3.1, 0.22);
     dockGroup.add(torFrame);
 
-    // 2. High-Bay Storage Pallet Rack in West Receiving Bay (flush against west wall, clear of camera)
+    // 2. High-Bay Storage Pallet Rack inside the Bay (at z = -2.7)
     const insideRack = new THREE.Group();
-    insideRack.position.set(-6.5, 0, -4.5);
+    insideRack.position.set(0, 0, -2.7);
     const rackFrameMat = standard(0x1a2832, { roughness: 0.65, metalness: 0.35 });
     const shelfBeamMat = standard(0xd9571e, { roughness: 0.5, metalness: 0.2 });
     // Steel uprights
-    [-1.8, 1.8].forEach((rx) => {
-      [-0.6, 0.6].forEach((rz) => {
-        addBox(insideRack, 0.1, 4.8, 0.1, rackFrameMat, rx, 2.4, rz);
+    [-1.6, 1.6].forEach((rx) => {
+      [-0.55, 0.55].forEach((rz) => {
+        addBox(insideRack, 0.1, 4.4, 0.1, rackFrameMat, rx, 2.2, rz);
       });
     });
     // Horizontal shelf beams
-    [1.1, 2.3, 3.5].forEach((sy) => {
-      addBox(insideRack, 3.8, 0.1, 1.25, shelfBeamMat, 0, sy, 0);
+    [1.1, 2.3, 3.4].forEach((sy) => {
+      addBox(insideRack, 3.3, 0.1, 1.15, shelfBeamMat, 0, sy, 0);
     });
     dockGroup.add(insideRack);
 
@@ -2921,7 +3100,7 @@
 
     // 4. Stored Pallets on the Rack Shelves
     const rackPalletA = new THREE.Group();
-    rackPalletA.position.set(-0.8, 1.95, 0);
+    rackPalletA.position.set(-0.7, 1.15, 0);
     addBox(rackPalletA, 1.2, 0.12, 0.9, standard(0x6c5138), 0, 0.06, 0);
     addCylinder(rackPalletA, 0.38, 0.38, 0.8, 12, standard(0xa8bcc8, { metalness: 0.8, roughness: 0.3 }), 0, 0.44, 0, { rx: Math.PI / 2 });
     insideRack.add(rackPalletA);
@@ -2935,7 +3114,7 @@
 
     // 6. Active Animated Factory Dock Forklift
     const dockForkliftGroup = new THREE.Group();
-    dockForkliftGroup.position.set(0, 0, -5.5);
+    dockForkliftGroup.position.set(0, 0, -2.1);
     const fMat = standard(0xff8f5c, { roughness: 0.52 });
     const fDark = standard(0x111c22, { roughness: 0.8 });
     // Chassis & Counterweight
@@ -4102,21 +4281,30 @@
     PODS.forEach((pod, pIdx) => {
       // Workstation Desk (3.2m long)
       addDesk(hubG, pod.x, pod.z, 3.2, 1.1, { accent: pod.accent });
-      // Dual monitors & laptops
+      // Dual curved monitors & illuminated developer laptops
       addMonitor(hubG, pod.x - 0.7, 0.79, pod.z - 0.25, 0, 'code', (pIdx * 2) % 4, 0.85);
       addMonitor(hubG, pod.x + 0.7, 0.79, pod.z - 0.25, 0, 'chart', (pIdx * 2 + 1) % 4, 0.85);
-      addLaptop(hubG, pod.x - 0.7, 0.782, pod.z + 0.22, Math.PI, 'code', pIdx);
-      addLaptop(hubG, pod.x + 0.7, 0.782, pod.z + 0.22, Math.PI, 'code', (pIdx + 1) % 4);
-      // Seated Hacker pair with animated typing
+      addLaptop(hubG, pod.x - 0.7, 0.782, pod.z + 0.18, 0, 'code', pIdx);
+      addLaptop(hubG, pod.x + 0.7, 0.782, pod.z + 0.18, 0, 'code', (pIdx + 1) % 4);
+
+      // Hacker desk accessories: RGB mechanical keyboard, mouse & energy drink cans
+      [-0.7, 0.7].forEach((dx) => {
+        addBox(hubG, 0.38, 0.015, 0.14, MAT.metalDark, pod.x + dx, 0.782, pod.z + 0.38, { cast: false });
+        addBox(hubG, 0.36, 0.005, 0.02, basicGlow(pod.accent, 0.6), pod.x + dx, 0.791, pod.z + 0.44, { cast: false }); // RGB strip
+        addBox(hubG, 0.06, 0.018, 0.10, MAT.steelDark, pod.x + dx + 0.28, 0.782, pod.z + 0.38, { cast: false }); // Mouse
+        addCylinder(hubG, 0.032, 0.032, 0.12, 8, standard(pod.accent), pod.x + dx + 0.42, 0.84, pod.z + 0.15); // Energy drink
+      });
+
+      // Seated Hacker pair correctly facing workstation desk & screens (ry: 0)
       createPerson(hubG, pod.x - 0.7, pod.z + 0.65, {
-        ry: Math.PI,
+        ry: 0,
         shirt: [0x2f4c5a, 0x614f3c, 0x365445, 0x5a3f36][pIdx],
         skin: INTERIOR.skin[pIdx % 4],
         phase: pIdx * 1.5,
         scale: 0.95
       });
       createPerson(hubG, pod.x + 0.7, pod.z + 0.65, {
-        ry: Math.PI,
+        ry: 0,
         shirt: [0x3a5563, 0x4b4234, 0x2d483a, 0x6b4438][pIdx],
         skin: INTERIOR.skin[(pIdx + 2) % 4],
         phase: pIdx * 1.5 + 2.2,
@@ -4256,12 +4444,35 @@
     });
 
     // ============================================================
-    // ZONE D: NORTH WALL AUTOMATED ASSEMBLY & ROBOTICS CELL
+    // ZONE D: AUTOMATED ROBOTIC MACHINING & QUALITY INSPECTION CELL
     // ============================================================
-    addRobotArm(factoryG, 3.5, -7.5, 0, 0xff8f5c, 0.9, 1.15);
+    // Elevated machine plinth with hazard perimeter border
+    addBox(factoryG, 2.0, 0.45, 2.0, MAT.steelDark, 4.4, 0.225, -7.5);
+    addBox(factoryG, 2.15, 0.05, 2.15, basicGlow(0xff8f5c, 0.65), 4.4, 0.46, -7.5, { cast: false });
+
+    // Robot arm mounted securely on the plinth tending parts between station & conveyor
+    addRobotArm(factoryG, 4.4, -7.5, Math.PI / 2, 0xff8f5c, 0.9, 1.15);
+
+    // Precision CNC parts index turntable station
+    addCylinder(factoryG, 0.55, 0.62, 0.82, 14, standard(0x283b48, { metalness: 0.7 }), 2.6, 0.41, -7.5);
+    addCylinder(factoryG, 0.42, 0.42, 0.12, 12, standard(0x9cb0be, { metalness: 0.9 }), 2.6, 0.88, -7.5);
+
+    // Overhead high-speed laser optical inspection arch
+    addBox(factoryG, 0.08, 1.6, 0.08, INTERIOR.steelDark, 2.6, 1.0, -8.3);
+    addBox(factoryG, 0.08, 1.6, 0.08, INTERIOR.steelDark, 2.6, 1.0, -6.7);
+    addBox(factoryG, 0.08, 0.08, 1.68, INTERIOR.steel, 2.6, 1.8, -7.5);
+    addBox(factoryG, 0.04, 0.02, 1.3, basicGlow(0x4be4ff, 1.6), 2.6, 1.75, -7.5, { cast: false });
+
+    // Infeed & Outfeed parts conveyor connecting into wall chute
     addInteriorConveyor(factoryG, 6.2, -7.5, 4.8, Math.PI / 2, 0xff8f5c, 'metal', 5);
-    createPerson(factoryG, 1.6, -7.5, {
-      ry: 0,
+
+    // Transparent safety polycarbonate enclosure with illuminated safety fence
+    addBox(factoryG, 4.6, 2.2, 0.06, MAT.glassWarm, 4.4, 1.1, -5.9, { cast: false });
+    addBox(factoryG, 4.6, 0.08, 0.08, basicGlow(0xff8f5c, 0.75), 4.4, 2.2, -5.9, { cast: false });
+
+    // Quality assurance engineer standing outside safety perimeter
+    createPerson(factoryG, 1.2, -6.0, {
+      ry: Math.PI / 3,
       seated: false,
       vest: true,
       shirt: 0x415b68,
@@ -4324,24 +4535,47 @@
     addBox(towerG, 2.2, 0.74, 6.8, standard(0x2b241e, { roughness: 0.35, metalness: 0.2 }), 0, 0.37, -0.5);
     addBox(towerG, 2.3, 0.06, 6.9, basicGlow(0xffd37a, 0.25), 0, 0.74, -0.5, { cast: false });
 
-    // Seated Executive Board Members
+    // Seated Executive Board Members & Realistic Workspace Props (50/50 Laptops & Notepads/Pens)
     [-2.2, -0.7, 0.8, 2.3].forEach((z, i) => {
-      // West side chairs
-      createPerson(towerG, -1.5, -0.5 + z * 0.7, {
-        ry: Math.PI / 2,
+      const zPos = -0.5 + z * 0.7;
+
+      // West side chairs & executive (facing East towards table: ry = -Math.PI / 2)
+      createPerson(towerG, -1.5, zPos, {
+        ry: -Math.PI / 2,
         shirt: [0x3d5066, 0x655d4b, 0x48556b, 0x354f5e][i],
         skin: INTERIOR.skin[i % 4],
         phase: i * 1.3,
         scale: 0.96
       });
-      // East side chairs
-      createPerson(towerG, 1.5, -0.5 + z * 0.7, {
-        ry: -Math.PI / 2,
+
+      // East side chairs & executive (facing West towards table: ry = Math.PI / 2)
+      createPerson(towerG, 1.5, zPos, {
+        ry: Math.PI / 2,
         shirt: [0x6a5d4d, 0x535f51, 0x2f4657, 0x4a5d6a][i],
         skin: INTERIOR.skin[(i + 2) % 4],
         phase: i * 1.3 + 2.0,
         scale: 0.96
       });
+
+      // West Table Props: Alternating 50/50 Laptops and Leather Notepads with Silver Pens & Coffee
+      if (i % 2 === 0) {
+        addLaptop(towerG, -0.72, 0.782, zPos, Math.PI / 2, 'chart', i);
+      } else {
+        addBox(towerG, 0.38, 0.015, 0.30, standard(0x1a1512, { roughness: 0.6 }), -0.72, 0.78, zPos);
+        addBox(towerG, 0.32, 0.018, 0.25, standard(0xf4f2ea, { roughness: 0.9 }), -0.72, 0.782, zPos);
+        addCylinder(towerG, 0.007, 0.007, 0.18, 6, standard(0xd0d5da, { metalness: 0.9, roughness: 0.2 }), -0.52, 0.795, zPos);
+        addCylinder(towerG, 0.038, 0.032, 0.075, 8, standard(0xffffff, { roughness: 0.3 }), -0.72, 0.81, zPos - 0.22);
+      }
+
+      // East Table Props: Alternating 50/50 Laptops and Leather Notepads with Silver Pens & Coffee
+      if (i % 2 === 1) {
+        addLaptop(towerG, 0.72, 0.782, zPos, -Math.PI / 2, 'chart', i + 1);
+      } else {
+        addBox(towerG, 0.38, 0.015, 0.30, standard(0x1a1512, { roughness: 0.6 }), 0.72, 0.78, zPos);
+        addBox(towerG, 0.32, 0.018, 0.25, standard(0xf4f2ea, { roughness: 0.9 }), 0.72, 0.782, zPos);
+        addCylinder(towerG, 0.007, 0.007, 0.18, 6, standard(0xd0d5da, { metalness: 0.9, roughness: 0.2 }), 0.52, 0.795, zPos);
+        addCylinder(towerG, 0.038, 0.032, 0.075, 8, standard(0xffffff, { roughness: 0.3 }), 0.72, 0.81, zPos - 0.22);
+      }
     });
 
     // Rotating 3D Holographic KPI Cylinder & Core
@@ -4555,9 +4789,40 @@
     addPalletRack(logisticsG, -10.2, 0, 0, 14.5, 0x6fe3a8);
     addPalletRack(logisticsG,  10.2, 0, 0, 14.5, 0x6fe3a8);
 
-    // Automated Inbound Parcel Sorter Conveyor & Palletizing Cell
-    addInteriorConveyor(logisticsG, -5.5, -8.2, 5.5, 0, 0x6fe3a8, 'crate', 6);
-    addRobotArm(logisticsG, 6.5, -8.0, Math.PI, 0x6fe3a8, 0.95, 1.15);
+    // ============================================================
+    // AUTOMATED HIGH-SPEED PARCEL INTAKE & ROBOTIC PALLETIZING CELL
+    // ============================================================
+    // 1. North Wall Intake Wall Chute & Rubber Draft Curtains (where parcels enter)
+    addBox(logisticsG, 1.8, 1.6, 0.9, MAT.metalDark, -5.5, 1.6, -10.4);
+    addBox(logisticsG, 1.3, 1.1, 0.04, standard(0x181818), -5.5, 1.5, -9.9, { cast: false });
+    addSphere(logisticsG, 0.12, basicGlow(0x6fe3a8, 1.8), -5.5, 2.35, -9.85);
+
+    // 2. Continuous Infeed Roller Conveyor from Wall Chute into Palletizing Station
+    addInteriorConveyor(logisticsG, -5.5, -7.25, 5.5, Math.PI / 2, 0x6fe3a8, 'crate', 6);
+
+    // 3. Automated Barcode & Dimensioning Laser Scanner Arch
+    addBox(logisticsG, 1.6, 2.0, 0.12, INTERIOR.steelDark, -5.5, 1.8, -7.5);
+    addBox(logisticsG, 1.3, 0.04, 0.04, basicGlow(0x6fe3a8, 1.8), -5.5, 2.7, -7.5, { cast: false });
+    [-0.45, 0.45].forEach((cx) => {
+      addBox(logisticsG, 0.12, 0.18, 0.14, MAT.steel, -5.5 + cx, 2.5, -7.4);
+    });
+
+    // 4. Heavy Robot Base Plinth with Safety Border at the Conveyor Terminus
+    addBox(logisticsG, 1.8, 0.35, 1.8, MAT.steelDark, -3.8, 0.175, -4.5);
+    addBox(logisticsG, 1.95, 0.04, 1.95, basicGlow(0x6fe3a8, 0.7), -3.8, 0.36, -4.5, { cast: false });
+
+    // 5. High-Speed Articulated Palletizing Robot Arm (operating between conveyor and pallet)
+    addRobotArm(logisticsG, -3.8, -4.5, -Math.PI / 2, 0x6fe3a8, 0.95, 1.15);
+
+    // 6. Pallet Staging Station with EUR Pallet & Stacked Cartons
+    addBox(logisticsG, 1.4, 0.14, 1.0, standard(0x6c5138), -2.0, 0.12, -4.5);
+    addBox(logisticsG, 0.55, 0.45, 0.42, standard(0x8d694d), -2.0, 0.42, -4.75);
+    addBox(logisticsG, 0.55, 0.45, 0.42, standard(0x9a7556), -2.0, 0.42, -4.25);
+    addBox(logisticsG, 0.52, 0.40, 0.40, standard(0x8d694d), -2.0, 0.85, -4.5);
+
+    // 7. Safety Perimeter Guardrails
+    addBox(logisticsG, 0.08, 1.1, 4.4, INTERIOR.steel, -1.1, 0.55, -6.5, { cast: false });
+    addBox(logisticsG, 3.4, 1.1, 0.08, INTERIOR.steel, -2.8, 0.55, -3.4, { cast: false });
 
     // ============================================================
     // AUTONOMOUS FLEET: 3 FORKLIFTS & 4 AGVS (Wide, non-overlapping lanes)
@@ -5175,72 +5440,47 @@
         spark.sprite.scale.setScalar(0.34 + flicker * 0.34);
       });
 
-      // Conveyor parcels
-      animated.conveyorCrates.forEach((crate) => {
-        const progress = (elapsed * 0.245 + crate.offset) % 1;
-        crate.mesh.position.set(-2.12 + progress * 4.24, 1.255 + Math.sin(elapsed * 13 + crate.offset * 8) * 0.012, 4.1);
-        crate.mesh.rotation.y = Math.sin(elapsed * 2 + crate.offset * 5) * 0.035;
-      });
-
       // Factory Supply-Chain Dock Forklift Loop (Unloading LKW from Harbor & Storing in Rack)
       if (animated.factoryDockForklift) {
         const df = animated.factoryDockForklift;
         const cycleProgress = (elapsed * df.speed) % 1;
         let zPos, forkY, heading, carrying;
+        const xPos = 0;
 
-        let xPos = 0;
-        if (cycleProgress < 0.35) {
-          const p = cycleProgress / 0.35;
-          // Drive from receiving rack (-6.5, -4.5) to street truck (0, 2.0)
-          if (p < 0.4) {
-            const sp = p / 0.4;
-            xPos = -6.5 + sp * 6.5;
-            zPos = -4.5 + sp * 3.5;
-            heading = 0.6;
-          } else {
-            const sp = (p - 0.4) / 0.6;
-            xPos = 0;
-            zPos = -1.0 + sp * 3.0;
-            heading = 0;
-          }
+        if (cycleProgress < 0.34) {
+          // 1. Drive forward out of the loading bay to the parked truck
+          const p = cycleProgress / 0.34;
+          zPos = -2.1 + p * 4.2; // -2.1 -> +2.1
           forkY = 0.35;
+          heading = 0;
           carrying = false;
-        } else if (cycleProgress < 0.45) {
-          const p = (cycleProgress - 0.35) / 0.10;
-          xPos = 0;
-          zPos = 2.0;
-          forkY = 0.35 + p * 0.65; // Lift pallet off truck bed
+        } else if (cycleProgress < 0.44) {
+          // 2. Lift coil pallet off the truck bed
+          const p = (cycleProgress - 0.34) / 0.10;
+          zPos = 2.1;
+          forkY = 0.35 + p * 0.60;
           heading = 0;
           carrying = true;
-        } else if (cycleProgress < 0.80) {
-          const p = (cycleProgress - 0.45) / 0.35;
-          // Drive back inside through Tor to west rack
-          if (p < 0.6) {
-            const sp = p / 0.6;
-            xPos = 0;
-            zPos = 2.0 - sp * 3.0;
-            heading = Math.PI;
-          } else {
-            const sp = (p - 0.6) / 0.4;
-            xPos = -sp * 6.5;
-            zPos = -1.0 - sp * 3.5;
-            heading = Math.PI + 0.6;
-          }
-          forkY = 1.05;
+        } else if (cycleProgress < 0.78) {
+          // 3. Reverse straight back through the roll-up gate into the bay
+          const p = (cycleProgress - 0.44) / 0.34;
+          zPos = 2.1 - p * 4.2; // +2.1 -> -2.1
+          forkY = 0.95;
+          heading = 0;
           carrying = true;
-        } else if (cycleProgress < 0.92) {
-          const p = (cycleProgress - 0.80) / 0.12;
-          xPos = -6.5;
-          zPos = -4.5;
-          forkY = 1.05 + p * 0.85; // Raise into storage rack
-          heading = Math.PI;
-          carrying = p < 0.65;
+        } else if (cycleProgress < 0.90) {
+          // 4. Raise forks to shelf tier inside the rack
+          const p = (cycleProgress - 0.78) / 0.12;
+          zPos = -2.1;
+          forkY = 0.95 + p * 0.70; // 0.95 -> 1.65
+          heading = 0;
+          carrying = p < 0.75;
         } else {
-          const p = (cycleProgress - 0.92) / 0.08;
-          xPos = -6.5;
-          zPos = -4.5;
-          forkY = 1.90 - p * 1.55; // Lower carriage back to ground
-          heading = Math.PI;
+          // 5. Lower empty carriage back to starting position
+          const p = (cycleProgress - 0.90) / 0.10;
+          zPos = -2.1;
+          forkY = 1.65 - p * 1.30;
+          heading = 0;
           carrying = false;
         }
 
