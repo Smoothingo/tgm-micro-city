@@ -838,6 +838,9 @@
     const selectRings = {};
     const labelSprites = {};
     const animated = {
+      factoryDockForklift: null,
+      trafficVehiclesFreight: [],
+      trafficVehiclesInner: [],
       radars: [],
       buoys: [],
       highwayVehicles: [],
@@ -1399,108 +1402,157 @@
     mainlandGroup.add(distWarehouse);
 
     // ============================================================
-    // VIBRANT CITY GRID & URBAN FABRIC (No Empty Void, Real Density)
+    // VIBRANT METROPOLIS: DENSE STREET GRID, STRATEGIC ARTERIES & RICH CITY BLOCKS
     // ============================================================
     const cityBase = new THREE.Group();
     CITY.add(cityBase);
 
-    // Main City District Ground Base (x: -26 to 58, z: -58 to 58)
-    const cityW = 84;
+    // City Base Deck (x: -42 to 62, z: -58 to 58)
+    const cityW = 104;
     const cityD = 116;
-    const cityCenterX = 16;
+    const cityCenterX = 10;
     const cityCenterZ = 0;
     addBox(cityBase, cityW + 4, 0.8, cityD + 4, MAT.base, cityCenterX, -0.4, cityCenterZ);
-    addBox(cityBase, cityW, 0.15, cityD, standard(0x15222b, { roughness: 0.85 }), cityCenterX, 0.02, cityCenterZ, { cast: false });
-
-    // Major Thoroughfares (Grand Avenues & Boulevards)
-    // 1. Grand East-West Central Boulevard (z = 0)
-    addBox(cityBase, cityW, 0.05, 5.4, MAT.road, cityCenterX, 0.045, 0, { cast: false });
-    // 2. Grand North-South Central Avenue (x = 0)
-    addBox(cityBase, 5.4, 0.05, cityD, MAT.road, 0, 0.045, 0, { cast: false });
-    // 3. West Harbor Wharf Road (x = -38)
-    addBox(cityBase, 5.4, 0.05, 82, MAT.road, -38, 0.045, 0, { cast: false });
-    // 4. East Boulevard (x = 38)
-    addBox(cityBase, 5.4, 0.05, 82, MAT.road, 38, 0.045, 0, { cast: false });
-    // 5. North Boulevard (z = -41)
-    addBox(cityBase, 76, 0.05, 5.4, MAT.road, 0, 0.045, -41, { cast: false });
-    // 6. South Boulevard (z = 41)
-    addBox(cityBase, 76, 0.05, 5.4, MAT.road, 0, 0.045, 41, { cast: false });
-
-    // Intermediate Connecting Streets
-    [-12, 14, 46].forEach((sx) => {
-      addBox(cityBase, 3.8, 0.045, 78, standard(0x1a2933, { roughness: 0.8 }), sx, 0.042, 0, { cast: false });
-    });
-    [-14, 14].forEach((sz) => {
-      addBox(cityBase, 72, 0.045, 3.8, standard(0x1a2933, { roughness: 0.8 }), 0, 0.042, sz, { cast: false });
-    });
-
-    // Road Markings (Dashed white lines on major avenues)
-    for (let x = -24; x <= 56; x += 3.2) {
-      if (Math.abs(x) > 3.2) {
-        addBox(cityBase, 1.4, 0.012, 0.1, MAT.whiteLine, x, 0.075, 0, { cast: false });
-        addBox(cityBase, 1.4, 0.012, 0.1, MAT.whiteLine, x, 0.075, -41, { cast: false });
-        addBox(cityBase, 1.4, 0.012, 0.1, MAT.whiteLine, x, 0.075, 41, { cast: false });
-      }
-    }
-    for (let z = -54; z <= 54; z += 3.2) {
-      if (Math.abs(z) > 3.2) {
-        addBox(cityBase, 0.1, 0.012, 1.4, MAT.whiteLine, 0, 0.075, z, { cast: false });
-        addBox(cityBase, 0.1, 0.012, 1.4, MAT.whiteLine, 38, 0.075, z, { cast: false });
-        addBox(cityBase, 0.1, 0.012, 1.4, MAT.whiteLine, -38, 0.075, z, { cast: false });
-      }
-    }
-
-    // Pedestrian Crosswalk Stripes at Major Intersections
-    [[-12, 0], [0, 0], [14, 0], [38, 0], [0, -41], [0, 41], [26, 0], [-24, 0]].forEach(([ix, iz]) => {
-      for (let s = -2; s <= 2; s++) {
-        addBox(cityBase, 0.35, 0.012, 1.2, MAT.whiteLine, ix + s * 0.6, 0.076, iz + 3.4, { cast: false });
-        addBox(cityBase, 0.35, 0.012, 1.2, MAT.whiteLine, ix + s * 0.6, 0.076, iz - 3.4, { cast: false });
-      }
-    });
+    addBox(cityBase, cityW, 0.15, cityD, standard(0x131e26, { roughness: 0.88 }), cityCenterX, 0.02, cityCenterZ, { cast: false });
 
     // ------------------------------------------------------------
-    // Central Civic Plaza (Centerpiece at x = 0, z = 0)
+    // STRATEGIC STREET GRID & CONNECTING ARTERIES
+    // ------------------------------------------------------------
+    // Major East-West Arteries (z coordinates)
+    const EW_STREETS = [
+      { z: -46.0, w: 5.2, name: 'North Industrial Way' },
+      { z: -20.0, w: 5.6, name: 'Factory-to-Hub Boulevard' },
+      { z: 0.0, w: 6.2, name: 'Grand Central Boulevard' },
+      { z: 14.0, w: 5.6, name: 'Logistics-to-Tower Commerce Way' },
+      { z: 44.0, w: 5.2, name: 'South Waterfront Way' }
+    ];
+
+    // Major North-South Arteries (x coordinates)
+    const NS_STREETS = [
+      { x: -38.0, w: 5.8, name: 'Harbor Wharf Access Road' },
+      { x: -24.0, w: 5.6, name: 'Harbor-to-Factory Freight Highway' },
+      { x: -12.0, w: 4.8, name: 'West Commercial Avenue' },
+      { x: 0.0, w: 6.2, name: 'Grand Central Avenue' },
+      { x: 14.0, w: 4.8, name: 'East Commercial Avenue' },
+      { x: 26.0, w: 5.6, name: 'Hub-to-Tower Tech Corridor' },
+      { x: 44.0, w: 5.2, name: 'East Metropolitan Boulevard' }
+    ];
+
+    // Render Asphalt Pavement Ribbons
+    const roadMat = standard(0x0e171f, { roughness: 0.82 });
+    EW_STREETS.forEach((st) => {
+      addBox(cityBase, 96, 0.05, st.w, roadMat, 10, 0.045, st.z, { cast: false });
+      // Double solid yellow center divider
+      addBox(cityBase, 94, 0.012, 0.08, basicGlow(0xffc35f, 0.95), 10, 0.076, st.z - 0.08, { cast: false });
+      addBox(cityBase, 94, 0.012, 0.08, basicGlow(0xffc35f, 0.95), 10, 0.076, st.z + 0.08, { cast: false });
+    });
+
+    NS_STREETS.forEach((st) => {
+      addBox(cityBase, st.w, 0.05, 108, roadMat, st.x, 0.045, 0, { cast: false });
+      // Double solid yellow center divider
+      addBox(cityBase, 0.08, 0.012, 106, basicGlow(0xffc35f, 0.95), st.x - 0.08, 0.076, 0, { cast: false });
+      addBox(cityBase, 0.08, 0.012, 106, basicGlow(0xffc35f, 0.95), st.x + 0.08, 0.076, 0, { cast: false });
+    });
+
+    // Dashed White Lane Dividers & Pedestrian Crosswalks
+    for (let x = -36; x <= 56; x += 3.6) {
+      if (Math.abs(x) > 3.5) {
+        EW_STREETS.forEach((st) => {
+          addBox(cityBase, 1.6, 0.012, 0.09, basicGlow(0xffffff, 0.95), x, 0.077, st.z - st.w * 0.28, { cast: false });
+          addBox(cityBase, 1.6, 0.012, 0.09, basicGlow(0xffffff, 0.95), x, 0.077, st.z + st.w * 0.28, { cast: false });
+        });
+      }
+    }
+    for (let z = -52; z <= 52; z += 3.6) {
+      if (Math.abs(z) > 3.5) {
+        NS_STREETS.forEach((st) => {
+          addBox(cityBase, 0.09, 0.012, 1.6, basicGlow(0xffffff, 0.95), st.x - st.w * 0.28, 0.077, z, { cast: false });
+          addBox(cityBase, 0.09, 0.012, 1.6, basicGlow(0xffffff, 0.95), st.x + st.w * 0.28, 0.077, z, { cast: false });
+        });
+      }
+    }
+
+    // Pedestrian Zebra Crosswalks at all Intersections
+    NS_STREETS.forEach((ns) => {
+      EW_STREETS.forEach((ew) => {
+        for (let s = -3; s <= 3; s++) {
+          addBox(cityBase, 0.35, 0.012, 1.4, basicGlow(0xffffff, 0.95), ns.x + s * 0.65, 0.078, ew.z + ew.w * 0.5 + 0.8, { cast: false });
+          addBox(cityBase, 0.35, 0.012, 1.4, basicGlow(0xffffff, 0.95), ns.x + s * 0.65, 0.078, ew.z - ew.w * 0.5 - 0.8, { cast: false });
+          addBox(cityBase, 1.4, 0.012, 0.35, basicGlow(0xffffff, 0.95), ns.x + ns.w * 0.5 + 0.8, 0.078, ew.z + s * 0.65, { cast: false });
+          addBox(cityBase, 1.4, 0.012, 0.35, basicGlow(0xffffff, 0.95), ns.x - ns.w * 0.5 - 0.8, 0.078, ew.z + s * 0.65, { cast: false });
+        }
+      });
+    });
+
+    // Raised Concrete Sidewalk Curbs for all City Blocks
+    const curbMat = standard(0x283845, { roughness: 0.72 });
+    const sidewalkMat = standard(0x1e2e3a, { roughness: 0.8 });
+    for (let i = 0; i < NS_STREETS.length - 1; i++) {
+      for (let j = 0; j < EW_STREETS.length - 1; j++) {
+        const x1 = NS_STREETS[i].x + NS_STREETS[i].w / 2;
+        const x2 = NS_STREETS[i + 1].x - NS_STREETS[i + 1].w / 2;
+        const z1 = EW_STREETS[j].z + EW_STREETS[j].w / 2;
+        const z2 = EW_STREETS[j + 1].z - EW_STREETS[j + 1].w / 2;
+        const bw = x2 - x1;
+        const bd = z2 - z1;
+        const bx = (x1 + x2) / 2;
+        const bz = (z1 + z2) / 2;
+
+        if (bw > 2 && bd > 2) {
+          // Sidewalk base slab
+          addBox(cityBase, bw - 0.3, 0.09, bd - 0.3, sidewalkMat, bx, 0.065, bz, { cast: false });
+          // Curb border trim
+          addBox(cityBase, bw, 0.06, 0.25, curbMat, bx, 0.06, z1 + 0.12, { cast: false });
+          addBox(cityBase, bw, 0.06, 0.25, curbMat, bx, 0.06, z2 - 0.12, { cast: false });
+          addBox(cityBase, 0.25, 0.06, bd, curbMat, x1 + 0.12, 0.06, bz, { cast: false });
+          addBox(cityBase, 0.25, 0.06, bd, curbMat, x2 - 0.12, 0.06, bz, { cast: false });
+        }
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Central Civic Plaza (Grand Roundabout at x = 0, z = 0)
     // ------------------------------------------------------------
     const plaza = new THREE.Group();
-    addCylinder(plaza, 7.5, 7.8, 0.22, 64, MAT.plaza, 0, 0.11, 0, { cast: false });
-    const plazaRing = new THREE.Mesh(new THREE.RingGeometry(6.6, 7.1, 64), basicGlow(0x4be4ff, 0.3));
+    addCylinder(plaza, 8.5, 8.8, 0.22, 64, MAT.plaza, 0, 0.11, 0, { cast: false });
+    const plazaRing = new THREE.Mesh(new THREE.RingGeometry(7.6, 8.1, 64), basicGlow(0x4be4ff, 0.32));
     plazaRing.rotation.x = -Math.PI / 2;
     plazaRing.position.y = 0.23;
     plaza.add(plazaRing);
 
-    const innerRing = new THREE.Mesh(new THREE.RingGeometry(3.8, 4.1, 64), basicGlow(0xffd37a, 0.25));
+    const innerRing = new THREE.Mesh(new THREE.RingGeometry(4.4, 4.8, 64), basicGlow(0xffd37a, 0.28));
     innerRing.rotation.x = -Math.PI / 2;
     innerRing.position.y = 0.232;
     plaza.add(innerRing);
 
     // Holographic campus monument
-    addCylinder(plaza, 1.2, 1.4, 0.44, 32, MAT.metalDark, 0, 0.42, 0);
-    const pedestalRing = new THREE.Mesh(new THREE.TorusGeometry(1.22, 0.03, 8, 48), basicGlow(0x69edff, 0.8));
+    addCylinder(plaza, 1.25, 1.45, 0.44, 32, MAT.metalDark, 0, 0.42, 0);
+    const pedestalRing = new THREE.Mesh(new THREE.TorusGeometry(1.28, 0.03, 8, 48), basicGlow(0x69edff, 0.85));
     pedestalRing.rotation.x = Math.PI / 2;
     pedestalRing.position.y = 0.65;
     plaza.add(pedestalRing);
 
     const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 1.2, 4.5, 24, 1, true),
-      basicGlow(0x55e9ff, 0.045)
+      new THREE.CylinderGeometry(0.68, 1.25, 4.8, 24, 1, true),
+      basicGlow(0x55e9ff, 0.05)
     );
-    beam.position.y = 2.85;
+    beam.position.y = 2.95;
     plaza.add(beam);
 
     const holoCore = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.85, 1),
+      new THREE.IcosahedronGeometry(0.88, 1),
       new THREE.MeshBasicMaterial({ color: 0x9df6ff, wireframe: true, transparent: true, opacity: 0.88 })
     );
-    holoCore.position.y = 2.95;
+    holoCore.position.y = 3.05;
     plaza.add(holoCore);
     animated.holoCore = holoCore;
 
     for (let i = 0; i < 3; i += 1) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(1.2 + i * 0.24, 0.015, 6, 64),
+        new THREE.TorusGeometry(1.25 + i * 0.25, 0.015, 6, 64),
         basicGlow(i === 1 ? 0xffd37a : 0x4be4ff, 0.7 - i * 0.12)
       );
-      ring.position.y = 2.95;
+      ring.position.y = 3.05;
       ring.rotation.x = (i * Math.PI) / 3;
       ring.rotation.y = (i * Math.PI) / 4;
       plaza.add(ring);
@@ -1511,7 +1563,7 @@
     const dustPositions = new Float32Array(dustCount * 3);
     for (let i = 0; i < dustCount; i += 1) {
       const angle = Math.random() * Math.PI * 2;
-      const radius = 0.4 + Math.random() * 3.2;
+      const radius = 0.4 + Math.random() * 3.4;
       dustPositions[i * 3] = Math.cos(angle) * radius;
       dustPositions[i * 3 + 1] = 0.9 + Math.random() * 4.2;
       dustPositions[i * 3 + 2] = Math.sin(angle) * radius;
@@ -1534,87 +1586,119 @@
     CITY.add(plaza);
 
     // ------------------------------------------------------------
-    // Secondary City Architecture (Filling All Blocks, Dense Metropolis)
+    // SECONDARY ARCHITECTURE: HIGH-DETAIL URBAN BLOCKS (NO BLACK BOXES)
     // ------------------------------------------------------------
     const urban = new THREE.Group();
     CITY.add(urban);
 
-    function addCityMidRise(parent, x, z, w, d, h, style = 'office') {
+    // Architectural Builders
+    function addGlassOfficeTower(parent, x, z, w, d, h, accentColor = 0x4be4ff) {
       const g = new THREE.Group();
-      g.position.set(x, 0.05, z);
-      const isTech = style === 'tech';
-      const isCom = style === 'commercial';
-      const isInd = style === 'industrial';
-      const isRes = style === 'residential';
+      g.position.set(x, 0.06, z);
+      const glassMat = standard(0x13384a, { roughness: 0.25, metalness: 0.45 });
+      const frameMat = standard(0x0e1b24, { roughness: 0.65 });
+      const glowMat = basicGlow(accentColor, 0.45);
 
-      const wallCol = isInd ? 0x24323b : isTech ? 0x142834 : isRes ? 0x36444e : 0x1b2832;
-      const bodyMat = standard(wallCol, { roughness: 0.75, metalness: 0.25 });
-      const glassMat = standard(isTech ? 0x113a4d : 0x1b3544, { roughness: 0.3, metalness: 0.4 });
-      const glowMat = basicGlow(isTech ? 0x4be4ff : isCom ? 0xffd37a : 0x6fe3a8, 0.4);
-
-      // Base footprint
-      addBox(g, w, h, d, bodyMat, 0, h / 2, 0);
-      // Window grid bands
-      const floors = Math.floor(h / 2.2);
+      // Main tower body
+      addBox(g, w, h, d, frameMat, 0, h / 2, 0);
+      addBox(g, w + 0.08, h * 0.92, d * 0.92, glassMat, 0, h / 2, 0, { cast: false });
+      // Floor slabs & glowing horizontal bands
+      const floors = Math.floor(h / 2.4);
       for (let f = 1; f < floors; f++) {
-        const fy = f * 2.2;
-        addBox(g, w + 0.04, 0.65, d * 0.88, glassMat, 0, fy, 0, { cast: false });
-        if (f % 2 === 0) {
-          addBox(g, w + 0.06, 0.08, d * 0.88, glowMat, 0, fy + 0.35, 0, { cast: false });
-        }
+        const fy = f * 2.4;
+        addBox(g, w + 0.12, 0.12, d + 0.12, glowMat, 0, fy, 0, { cast: false });
       }
-      // Rooftop utility box / elevator shaft
-      addBox(g, w * 0.4, 1.4, d * 0.4, MAT.metalDark, 0, h + 0.7, 0);
-      // HVAC Chiller cylinders
-      addCylinder(g, 0.35, 0.35, 0.5, 8, MAT.steel, w * 0.25, h + 0.25, -d * 0.25);
+      // Rooftop mechanical penthouse
+      addBox(g, w * 0.45, 1.8, d * 0.45, frameMat, 0, h + 0.9, 0);
+      addCylinder(g, 0.4, 0.4, 0.6, 10, MAT.steel, w * 0.22, h + 0.3, -d * 0.22);
+      addCylinder(g, 0.4, 0.4, 0.6, 10, MAT.steel, -w * 0.22, h + 0.3, d * 0.22);
       parent.add(g);
       return g;
     }
 
-    // 1. Financial & Commercial Quarter (Southeast & East)
-    addCityMidRise(urban, 12, 14, 8.5, 7.5, 13.5, 'office');
-    addCityMidRise(urban, 46, 24, 9.5, 8.5, 17.0, 'office');
-    addCityMidRise(urban, 46, 38, 9.0, 7.0, 10.5, 'commercial');
-    addCityMidRise(urban, 46, 10, 8.5, 8.5, 8.5, 'commercial');
+    function addRetailBlock(parent, x, z, w, d, h, signColor = 0xffd37a) {
+      const g = new THREE.Group();
+      g.position.set(x, 0.06, z);
+      const bodyMat = standard(0x1d2b36, { roughness: 0.72 });
+      // Storefront with warm glowing interior windows
+      addBox(g, w, h, d, bodyMat, 0, h / 2, 0);
+      addBox(g, w + 0.08, 1.6, d * 0.88, MAT.glassWarm, 0, 1.0, 0, { cast: false });
+      // Illuminated neon commercial sign band
+      addBox(g, w * 0.85, 0.4, 0.1, basicGlow(signColor, 0.95), 0, 2.2, d / 2 + 0.06, { cast: false });
+      // Upper residential / studio floors
+      const floors = Math.floor(h / 2.2);
+      for (let f = 2; f < floors; f++) {
+        addBox(g, w + 0.05, 0.45, d * 0.82, standard(0x122430), 0, f * 2.2, 0, { cast: false });
+      }
+      parent.add(g);
+      return g;
+    }
+
+    function addIndustrialShed(parent, x, z, w, d, h) {
+      const g = new THREE.Group();
+      g.position.set(x, 0.06, z);
+      const steelWall = standard(0x283a45, { roughness: 0.7, metalness: 0.35 });
+      addBox(g, w, h, d, steelWall, 0, h / 2, 0);
+      // Sawtooth roof skylights
+      for (let rx = -w / 2 + 1.4; rx < w / 2 - 1.0; rx += 2.4) {
+        addBox(g, 1.4, 0.16, d * 0.9, basicGlow(0xffb06f, 0.7), rx, h + 0.4, 0, { cast: false });
+      }
+      // Roll-up service bay doors
+      addBox(g, 2.4, 2.4, 0.1, MAT.metalDark, 0, 1.2, d / 2 + 0.06, { cast: false });
+      addBox(g, 2.4, 0.1, 0.12, basicGlow(0xffc35f, 0.8), 0, 2.45, d / 2 + 0.06, { cast: false });
+      parent.add(g);
+      return g;
+    }
+
+    // 1. DOWNTOWN FINANCIAL & COMMERCIAL CORRIDOR (Southeast)
+    addGlassOfficeTower(urban, 12, 14, 8.4, 7.6, 14.5, 0xffd37a);
+    addGlassOfficeTower(urban, 44, 24, 9.4, 8.4, 18.0, 0xffd37a);
+    addRetailBlock(urban, 44, 38, 9.0, 7.0, 10.5, 0xff8f5c);
+    addRetailBlock(urban, 44, 10, 8.6, 8.6, 8.5, 0x4be4ff);
     // Multi-Level Parking Garage
-    const parking = addCityMidRise(urban, 28, 42, 9.5, 8.5, 7.2, 'commercial');
-    addBox(parking, 1.8, 0.6, 0.9, standard(0x8a2420), -2.2, 7.55, -2.0); // Parked car on roof
-    addBox(parking, 1.8, 0.6, 0.9, standard(0x19455a), 2.2, 7.55, 1.8);
+    const parking = new THREE.Group();
+    parking.position.set(28, 0.06, 42);
+    addBox(parking, 9.5, 7.5, 8.5, standard(0x233440, { roughness: 0.8 }), 0, 3.75, 0);
+    // Open decks with safety barriers
+    for (let l = 1; l <= 3; l++) {
+      addBox(parking, 9.6, 0.12, 8.6, basicGlow(0xfff5c0, 0.35), 0, l * 2.4, 0, { cast: false });
+    }
+    // Parked cars on rooftop deck
+    addBox(parking, 1.8, 0.65, 0.9, standard(0x8a2420), -2.2, 7.85, -2.0);
+    addBox(parking, 1.8, 0.65, 0.9, standard(0x19455a), 2.2, 7.85, 1.8);
+    urban.add(parking);
 
-    // 2. Innovation & Tech Quarter (Northeast & East)
-    addCityMidRise(urban, 12, -14, 8.5, 7.5, 10.5, 'tech');
-    addCityMidRise(urban, 46, -28, 9.5, 8.5, 12.0, 'tech');
-    addCityMidRise(urban, 46, -14, 8.5, 7.5, 9.0, 'tech');
-    addCityMidRise(urban, 46, -42, 8.5, 7.0, 7.5, 'tech');
-    // Tech Hub Annex
-    addCityMidRise(urban, 26, -44, 8.5, 6.5, 8.0, 'tech');
+    // 2. TECH CAMPUS & RESEARCH INCUBATORS (Northeast)
+    addGlassOfficeTower(urban, 12, -14, 8.4, 7.6, 11.5, 0x4be4ff);
+    addGlassOfficeTower(urban, 44, -28, 9.4, 8.4, 13.5, 0x4be4ff);
+    addRetailBlock(urban, 44, -14, 8.6, 7.6, 9.2, 0x4be4ff);
+    addGlassOfficeTower(urban, 44, -42, 8.6, 7.2, 8.0, 0x6fe3a8);
+    addGlassOfficeTower(urban, 26, -44, 8.6, 6.8, 8.5, 0x4be4ff);
 
-    // 3. Advanced Manufacturing & Industrial Workshops (Northwest)
-    addCityMidRise(urban, -12, -14, 8.5, 7.5, 7.0, 'industrial');
-    addCityMidRise(urban, -42, -28, 8.5, 8.5, 7.5, 'industrial');
-    addCityMidRise(urban, -42, -14, 8.5, 7.0, 6.5, 'industrial');
-    addCityMidRise(urban, -24, -46, 8.0, 7.0, 6.8, 'industrial');
-    // Freight Rail Spur near Factory
+    // 3. INDUSTRIAL SECTOR & WORKSHOPS (Northwest)
+    addIndustrialShed(urban, -12, -14, 8.4, 7.6, 7.2);
+    addIndustrialShed(urban, -42, -28, 8.6, 8.6, 7.8);
+    addIndustrialShed(urban, -42, -14, 8.6, 7.2, 6.8);
+    addIndustrialShed(urban, -24, -46, 8.2, 7.2, 7.0);
+    // Freight Rail Spur
     const railSpur = new THREE.Group();
-    railSpur.position.set(-28, 0.05, -46);
+    railSpur.position.set(-30, 0.05, -46);
     addBox(railSpur, 1.8, 0.04, 28.0, MAT.steel, 0, 0.02, 0, { cast: false });
-    // Diesel Shunter Locomotive (blue/yellow livery)
     const loco = new THREE.Group();
     loco.position.set(0, 0, -6);
     addBox(loco, 1.6, 1.8, 5.2, standard(0x1b435d, { roughness: 0.5 }), 0, 1.2, 0);
     addBox(loco, 1.62, 0.6, 0.1, basicGlow(0xffc35f, 0.9), 0, 0.9, 2.62, { cast: false });
     addBox(loco, 1.4, 0.6, 1.6, MAT.glassWarm, 0, 1.6, 1.2, { cast: false });
     railSpur.add(loco);
-    // 2 Cargo boxcars
     addBox(railSpur, 1.55, 1.6, 4.8, standard(0x5a3428, { roughness: 0.7 }), 0, 1.1, 1.0);
     addBox(railSpur, 1.55, 1.6, 4.8, standard(0x354b38, { roughness: 0.7 }), 0, 1.1, 7.2);
     urban.add(railSpur);
 
-    // 4. Logistics, Port & Cold Storage (Southwest)
-    addCityMidRise(urban, -12, 14, 8.5, 7.5, 6.5, 'commercial');
-    addCityMidRise(urban, -24, 44, 9.0, 7.5, 7.8, 'industrial');
-    addCityMidRise(urban, -42, 24, 8.5, 7.5, 6.0, 'industrial');
-    // Secondary Container Terminal Yard
+    // 4. LOGISTICS & MARITIME QUARTER (Southwest)
+    addRetailBlock(urban, -12, 14, 8.4, 7.6, 7.0, 0x6fe3a8);
+    addIndustrialShed(urban, -24, 44, 9.2, 7.6, 8.2);
+    addIndustrialShed(urban, -42, 24, 8.6, 7.6, 6.5);
+    // Secondary Container Stacks
     const cYard = new THREE.Group();
     cYard.position.set(-42, 0.05, 40);
     const cYardCols = [0x1994b2, 0xe65100, 0x005832, 0xd4a017, 0xc81b6e];
@@ -1626,13 +1710,11 @@
     }
     urban.add(cYard);
 
-    // 5. Civic & Residential Lofts & Urban Waterfront Park (South)
-    addCityMidRise(urban, 10, 42, 8.5, 7.5, 10.5, 'residential');
-    // Urban Waterfront Park
+    // 5. CIVIC, RESIDENTIAL LOFTS & WATERFRONT PARK (South)
+    addRetailBlock(urban, 10, 42, 8.6, 7.6, 11.0, 0xffd37a);
     const park = new THREE.Group();
     park.position.set(-10, 0.06, 42);
     addBox(park, 8.5, 0.08, 8.5, MAT.grass, 0, 0.04, 0);
-    // Reflection Pond
     addBox(park, 5.2, 0.04, 4.8, standard(0x06283b, { roughness: 0.1, metalness: 0.9 }), 0, 0.09, 0, { cast: false });
     addTree(-12, 40, 1.1, 0);
     addTree(-8, 44, 0.95, 2);
@@ -1643,32 +1725,30 @@
     metro.position.set(-6, 0.08, 6);
     addBox(metro, 3.2, 1.2, 2.4, MAT.glass, 0, 0.6, 0);
     addBox(metro, 3.4, 0.15, 2.6, MAT.metalDark, 0, 1.25, 0);
-    // Glowing "M" Metro totem
     addCylinder(metro, 0.08, 0.08, 2.8, 6, MAT.steel, 1.8, 1.4, 0);
     addBox(metro, 0.45, 0.45, 0.08, basicGlow(0x4be4ff, 1.4), 1.8, 2.7, 0, { cast: false });
     urban.add(metro);
 
-    // Curbside Parked Cars & Vans along the avenues
+    // Curbside Parked Cars & Delivery Vans
     [
-      [6, 3.4, 0x1b435d], [-6, -3.4, 0x8a2420], [20, 3.4, 0x3d5442],
-      [-20, -3.4, 0x223545], [3.4, 20, 0xffd37a], [-3.4, -20, 0x193b4b],
-      [3.4, -30, 0x384a56], [-3.4, 30, 0x8a3229], [34, 18, 0x2b4436],
+      [6, 3.6, 0x1b435d], [-6, -3.6, 0x8a2420], [20, 3.6, 0x3d5442],
+      [-20, -3.6, 0x223545], [3.6, 20, 0xffd37a], [-3.6, -20, 0x193b4b],
+      [3.6, -30, 0x384a56], [-3.6, 30, 0x8a3229], [34, 18, 0x2b4436],
       [34, -18, 0x1a3344]
     ].forEach(([cx, cz, ccol]) => {
       const pCar = addBox(urban, 1.8, 0.65, 0.9, standard(ccol, { roughness: 0.5 }), cx, 0.42, cz);
       addBox(pCar, 0.04, 0.14, 0.7, basicGlow(0xfff5c0, 0.9), cx > 0 ? 0.92 : -0.92, 0.42, cz, { cast: false });
     });
 
-    // Street Lamps along the entire urban grid
+    // Street Lamps along all Strategic Street Intersections
     [
-      [-38, -20], [-38, 0], [-38, 20],
-      [-24, -14], [-24, 0], [-24, 14],
-      [-12, -28], [-12, -14], [-12, 0], [-12, 14], [-12, 28],
-      [0, -41], [0, -28], [0, -14], [0, 14], [0, 28], [0, 41],
-      [14, -28], [14, -14], [14, 0], [14, 14], [14, 28],
-      [26, -14], [26, 0], [26, 14],
-      [38, -41], [38, -20], [38, 0], [38, 20], [38, 41],
-      [46, -28], [46, 0], [46, 28]
+      [-38, -46], [-38, -20], [-38, 0], [-38, 14], [-38, 44],
+      [-24, -46], [-24, -20], [-24, 0], [-24, 14], [-24, 44],
+      [-12, -46], [-12, -20], [-12, 0], [-12, 14], [-12, 44],
+      [0, -46], [0, -20], [0, 14], [0, 44],
+      [14, -46], [14, -20], [14, 0], [14, 14], [14, 44],
+      [26, -46], [26, -20], [26, 0], [26, 14], [26, 44],
+      [44, -46], [44, -20], [44, 0], [44, 14], [44, 44]
     ].forEach(([lx, lz]) => {
       addLamp(lx, lz, (Math.abs(lx) + Math.abs(lz)) % 2 === 0 ? 0xaeeeff : 0xffdcae);
     });
@@ -1680,7 +1760,7 @@
       [2, -35], [2, -21], [2, -7], [2, 7], [2, 21], [2, 35],
       [16, -35], [16, -7], [16, 7], [16, 35],
       [36, -35], [36, -10], [36, 10], [36, 35],
-      [44, -21], [44, 21]
+      [42, -21], [42, 21]
     ].forEach(([tx, tz], tidx) => {
       addTree(tx, tz, 0.95 + (tidx % 3) * 0.1, tidx % 3);
     });
@@ -2688,12 +2768,111 @@
       }
     }
 
+        // ------------------------------------------------------------
+    // FACTORY SUPPLY-CHAIN LOGISTICS: UNLOADING LKW FROM HARBOR & RACK STORAGE
+    // ------------------------------------------------------------
+    const dockGroup = new THREE.Group();
+    dockGroup.position.set(-24.0, 0.05, -20.0);
+    CITY.add(dockGroup);
+
+    // 1. Factory Loading Bay Gate (Tor) on south facade
+    const torFrame = new THREE.Group();
+    torFrame.position.set(0, 0, -0.6);
+    addBox(torFrame, 3.6, 3.8, 0.45, MAT.steelDark, 0, 1.9, 0);
+    // Open roll-up portal (empty interior opening)
+    addBox(torFrame, 0.45, 3.8, 0.5, MAT.steel, -1.6, 1.9, 0);
+    addBox(torFrame, 0.45, 3.8, 0.5, MAT.steel, 1.6, 1.9, 0);
+    addBox(torFrame, 3.6, 0.6, 0.55, MAT.steel, 0, 3.5, 0);
+    addBox(torFrame, 3.6, 0.12, 0.56, basicGlow(0xffc35f, 0.95), 0, 3.15, 0, { cast: false }); // Hazard striping
+    addBox(torFrame, 0.1, 0.1, 3.2, basicGlow(0x6fe3a8, 0.9), 0, 3.6, 0.28, { cast: false }); // Green status light
+    dockGroup.add(torFrame);
+
+    // 2. High-Bay Storage Pallet Rack inside Factory Hall (z = -5.8 relative to dock)
+    const insideRack = new THREE.Group();
+    insideRack.position.set(0, 0, -5.8);
+    // Steel uprights
+    [-1.8, 1.8].forEach((rx) => {
+      [-0.6, 0.6].forEach((rz) => {
+        addBox(insideRack, 0.08, 4.2, 0.08, MAT.steelDark, rx, 2.1, rz);
+      });
+    });
+    // Horizontal shelf beams
+    [0.9, 1.9, 2.9].forEach((sy) => {
+      addBox(insideRack, 3.6, 0.09, 1.2, MAT.orange, 0, sy, 0);
+    });
+    dockGroup.add(insideRack);
+
+    // 3. Flatbed Delivery LKW from Harbor parked on Freight Street (z = 4.8 relative to dock)
+    createSteelTruck(dockGroup, 0, 4.8, 0, { color: 0x1a3d52, cargo: 'coils' });
+
+    // 4. Stored Pallets on the Rack Shelves
+    const rackPalletA = new THREE.Group();
+    rackPalletA.position.set(-0.8, 1.95, 0);
+    addBox(rackPalletA, 1.2, 0.12, 0.9, standard(0x6c5138), 0, 0.06, 0);
+    addCylinder(rackPalletA, 0.38, 0.38, 0.8, 12, standard(0xa8bcc8, { metalness: 0.8, roughness: 0.3 }), 0, 0.44, 0, { rx: Math.PI / 2 });
+    insideRack.add(rackPalletA);
+
+    // 5. Cargo Pallet on the Truck Bed (to be unloaded)
+    const truckPallet = new THREE.Group();
+    truckPallet.position.set(0, 0.88, 3.0);
+    addBox(truckPallet, 1.2, 0.12, 0.9, standard(0x6c5138), 0, 0.06, 0);
+    addCylinder(truckPallet, 0.38, 0.38, 0.8, 12, standard(0xa8bcc8, { metalness: 0.8, roughness: 0.3 }), 0, 0.44, 0, { rx: Math.PI / 2 });
+    dockGroup.add(truckPallet);
+
+    // 6. Active Animated Factory Dock Forklift
+    const dockForkliftGroup = new THREE.Group();
+    dockForkliftGroup.position.set(0, 0, -5.5);
+    const fMat = standard(0xff8f5c, { roughness: 0.52 });
+    const fDark = standard(0x111c22, { roughness: 0.8 });
+    // Chassis & Counterweight
+    addBox(dockForkliftGroup, 1.15, 0.55, 1.6, fMat, 0, 0.42, -0.2);
+    addBox(dockForkliftGroup, 1.05, 0.65, 0.55, standard(0x22323d), 0, 0.55, -0.75);
+    // Overhead guard / cage
+    addBox(dockForkliftGroup, 0.95, 1.15, 0.95, MAT.steelDark, 0, 1.35, -0.15);
+    addBox(dockForkliftGroup, 0.85, 0.06, 0.85, fMat, 0, 1.95, -0.15, { cast: false });
+    // Wheels
+    [-0.58, 0.58].forEach((wx) => {
+      addCylinder(dockForkliftGroup, 0.22, 0.22, 0.16, 10, fDark, wx, 0.22, 0.45, { rz: Math.PI / 2 });
+      addCylinder(dockForkliftGroup, 0.22, 0.22, 0.16, 10, fDark, wx, 0.22, -0.55, { rz: Math.PI / 2 });
+    });
+    // Vertical Mast
+    addBox(dockForkliftGroup, 0.72, 2.2, 0.08, MAT.steelDark, 0, 1.2, 0.65);
+    // Fork Carriage & Tines
+    const forkCarriage = new THREE.Group();
+    forkCarriage.position.set(0, 0.35, 0.7);
+    addBox(forkCarriage, 0.68, 0.45, 0.06, MAT.steel, 0, 0.25, 0);
+    [-0.22, 0.22].forEach((tx) => {
+      addBox(forkCarriage, 0.08, 0.04, 0.95, MAT.steel, tx, 0.03, 0.48);
+    });
+
+    // The Cargo Pallet carried by the Forklift
+    const carriedPallet = new THREE.Group();
+    carriedPallet.position.set(0, 0.08, 0.48);
+    addBox(carriedPallet, 1.2, 0.12, 0.9, standard(0x6c5138), 0, 0.06, 0);
+    addCylinder(carriedPallet, 0.38, 0.38, 0.8, 12, standard(0xa8bcc8, { metalness: 0.8, roughness: 0.3 }), 0, 0.44, 0, { rx: Math.PI / 2 });
+    carriedPallet.visible = false;
+    forkCarriage.add(carriedPallet);
+
+    dockForkliftGroup.add(forkCarriage);
+    dockGroup.add(dockForkliftGroup);
+
+    animated.factoryDockForklift = {
+      group: dockForkliftGroup,
+      carriage: forkCarriage,
+      carriedPallet,
+      truckPallet,
+      insideRack,
+      speed: 0.08
+    };
+
+    
     buildHarbor();
     buildSteerableVehicle();
 
     // ------------------------------------------------------------
-    // Ring-road traffic (Expanded 76×82 boulevard loop navigating all districts)
+    // MULTI-CIRCUIT CITY TRAFFIC (Freight Supply Chain, Commuter & Outer Loops)
     // ------------------------------------------------------------
+    // Circuit 1: Outer Boulevard Loop (76x82m)
     const boulevardW = 76.0;
     const boulevardD = 82.0;
     const boulevardR = 8.0;
@@ -2702,55 +2881,69 @@
     const r = boulevardR;
     const routePoints = [];
 
-    // North straight edge (z = -hz, traveling East)
     routePoints.push(new THREE.Vector3(-hx + r, 0.06, -hz));
     routePoints.push(new THREE.Vector3(0, 0.06, -hz));
     routePoints.push(new THREE.Vector3(hx - r, 0.06, -hz));
-
-    // NE corner arc
     const cxNE = hx - r, czNE = -hz + r;
     for (let i = 1; i <= 4; i++) {
       const ang = -Math.PI / 2 + (Math.PI / 2) * (i / 5);
       routePoints.push(new THREE.Vector3(cxNE + r * Math.cos(ang), 0.06, czNE + r * Math.sin(ang)));
     }
-
-    // East straight edge (x = hx, traveling South)
     routePoints.push(new THREE.Vector3(hx, 0.06, -hz + r));
     routePoints.push(new THREE.Vector3(hx, 0.06, 0));
     routePoints.push(new THREE.Vector3(hx, 0.06, hz - r));
-
-    // SE corner arc
     const cxSE = hx - r, czSE = hz - r;
     for (let i = 1; i <= 4; i++) {
       const ang = 0 + (Math.PI / 2) * (i / 5);
       routePoints.push(new THREE.Vector3(cxSE + r * Math.cos(ang), 0.06, czSE + r * Math.sin(ang)));
     }
-
-    // South straight edge (z = hz, traveling West)
     routePoints.push(new THREE.Vector3(hx - r, 0.06, hz));
     routePoints.push(new THREE.Vector3(0, 0.06, hz));
     routePoints.push(new THREE.Vector3(-hx + r, 0.06, hz));
-
-    // SW corner arc
     const cxSW = -hx + r, czSW = hz - r;
     for (let i = 1; i <= 4; i++) {
       const ang = Math.PI / 2 + (Math.PI / 2) * (i / 5);
       routePoints.push(new THREE.Vector3(cxSW + r * Math.cos(ang), 0.06, czSW + r * Math.sin(ang)));
     }
-
-    // West straight edge (x = -hx, traveling North along Harbor Wharf)
     routePoints.push(new THREE.Vector3(-hx, 0.06, hz - r));
     routePoints.push(new THREE.Vector3(-hx, 0.06, 0));
     routePoints.push(new THREE.Vector3(-hx, 0.06, -hz + r));
-
-    // NW corner arc
     const cxNW = -hx + r, czNW = -hz + r;
     for (let i = 1; i <= 4; i++) {
       const ang = Math.PI + (Math.PI / 2) * (i / 5);
       routePoints.push(new THREE.Vector3(cxNW + r * Math.cos(ang), 0.06, czNW + r * Math.sin(ang)));
     }
-
     const trafficRoute = new THREE.CatmullRomCurve3(routePoints, true, 'centripetal', 0.08);
+
+    // Circuit 2: Strategic Harbor-to-Factory Freight Route
+    const freightWaypoints = [
+      new THREE.Vector3(-38.0, 0.06, 32.0),
+      new THREE.Vector3(-38.0, 0.06, 14.0),
+      new THREE.Vector3(-38.0, 0.06, -10.0),
+      new THREE.Vector3(-38.0, 0.06, -20.0),
+      new THREE.Vector3(-32.0, 0.06, -20.0),
+      new THREE.Vector3(-24.0, 0.06, -20.0), // Factory loading apron
+      new THREE.Vector3(-24.0, 0.06, -8.0),
+      new THREE.Vector3(-24.0, 0.06, 8.0),
+      new THREE.Vector3(-24.0, 0.06, 24.0),  // Logistics terminal
+      new THREE.Vector3(-32.0, 0.06, 32.0)
+    ];
+    const freightRoute = new THREE.CatmullRomCurve3(freightWaypoints, true, 'centripetal', 0.08);
+
+    // Circuit 3: Downtown & Tech Commuter Circuit
+    const commuterWaypoints = [
+      new THREE.Vector3(0.0, 0.06, 0.0),    // Central Plaza
+      new THREE.Vector3(14.0, 0.06, 0.0),
+      new THREE.Vector3(26.0, 0.06, 0.0),
+      new THREE.Vector3(26.0, 0.06, 24.0),  // Downtown Tower
+      new THREE.Vector3(38.0, 0.06, 24.0),
+      new THREE.Vector3(38.0, 0.06, 0.0),
+      new THREE.Vector3(26.0, 0.06, -20.0),
+      new THREE.Vector3(26.0, 0.06, -28.0), // Tech Hub
+      new THREE.Vector3(14.0, 0.06, -20.0),
+      new THREE.Vector3(0.0, 0.06, -20.0)
+    ];
+    const commuterRoute = new THREE.CatmullRomCurve3(commuterWaypoints, true, 'centripetal', 0.08);
 
     function createTruck(color, accentColor) {
       const group = new THREE.Group();
@@ -2786,18 +2979,32 @@
       return group;
     }
 
-    const vehicleSpecs = [
+    // Populate Circuit 1 (Outer Boulevard Loop)
+    [
       { mesh: createTruck(0x455d59, 0x6fe3a8), speed: 0.0075, offset: 0.02 },
       { mesh: createTruck(0x565e68, 0x9ec7dd), speed: 0.0068, offset: 0.29 },
       { mesh: createCar(0x435e6c, 0x4be4ff), speed: 0.0125, offset: 0.56 },
       { mesh: createCar(0x6c5940, 0xffd37a), speed: 0.0112, offset: 0.79 }
-    ];
-    vehicleSpecs.forEach((spec) => {
-      animated.vehicles.push({
-        ...spec,
-        tangent: new THREE.Vector3(),
-        point: new THREE.Vector3()
-      });
+    ].forEach((spec) => {
+      animated.vehicles.push({ ...spec, route: trafficRoute, tangent: new THREE.Vector3(), point: new THREE.Vector3() });
+    });
+
+    // Populate Circuit 2 (Strategic Freight Supply Chain Route)
+    [
+      { mesh: createTruck(0x1a3d52, 0xff8f5c), speed: 0.0085, offset: 0.10 },
+      { mesh: createTruck(0x284236, 0x6fe3a8), speed: 0.0078, offset: 0.45 },
+      { mesh: createCar(0x354e58, 0xffc35f), speed: 0.0115, offset: 0.75 }
+    ].forEach((spec) => {
+      animated.trafficVehiclesFreight.push({ ...spec, route: freightRoute, tangent: new THREE.Vector3(), point: new THREE.Vector3() });
+    });
+
+    // Populate Circuit 3 (Downtown & Tech Commuter Route)
+    [
+      { mesh: createCar(0x19455a, 0x4be4ff), speed: 0.0135, offset: 0.05 },
+      { mesh: createCar(0x8a2420, 0xffd37a), speed: 0.0120, offset: 0.38 },
+      { mesh: createCar(0x2c4e3b, 0x6fe3a8), speed: 0.0142, offset: 0.70 }
+    ].forEach((spec) => {
+      animated.trafficVehiclesInner.push({ ...spec, route: commuterRoute, tangent: new THREE.Vector3(), point: new THREE.Vector3() });
     });
 
     // Data flows between the network hub and the districts
@@ -4949,6 +5156,77 @@
         const progress = (elapsed * 0.245 + crate.offset) % 1;
         crate.mesh.position.set(-2.12 + progress * 4.24, 1.255 + Math.sin(elapsed * 13 + crate.offset * 8) * 0.012, 4.1);
         crate.mesh.rotation.y = Math.sin(elapsed * 2 + crate.offset * 5) * 0.035;
+      });
+
+      // Factory Supply-Chain Dock Forklift Loop (Unloading LKW from Harbor & Storing in Rack)
+      if (animated.factoryDockForklift) {
+        const df = animated.factoryDockForklift;
+        const cycleProgress = (elapsed * df.speed) % 1;
+        let zPos, forkY, heading, carrying;
+
+        if (cycleProgress < 0.35) {
+          const p = cycleProgress / 0.35;
+          zPos = -5.5 + p * (2.0 - (-5.5)); // Drive from rack to truck bed
+          forkY = 0.35;
+          heading = 0;
+          carrying = false;
+        } else if (cycleProgress < 0.45) {
+          const p = (cycleProgress - 0.35) / 0.10;
+          zPos = 2.0;
+          forkY = 0.35 + p * 0.55; // Lift pallet off truck bed
+          heading = 0;
+          carrying = true;
+        } else if (cycleProgress < 0.80) {
+          const p = (cycleProgress - 0.45) / 0.35;
+          zPos = 2.0 - p * (2.0 - (-5.5)); // Drive back inside through Tor to rack
+          forkY = 0.90;
+          heading = Math.PI;
+          carrying = true;
+        } else if (cycleProgress < 0.92) {
+          const p = (cycleProgress - 0.80) / 0.12;
+          zPos = -5.5;
+          forkY = 0.90 + p * 0.70; // Raise into storage rack
+          heading = Math.PI;
+          carrying = p < 0.65;
+        } else {
+          const p = (cycleProgress - 0.92) / 0.08;
+          zPos = -5.5;
+          forkY = 1.60 - p * 1.25; // Lower carriage back to ground
+          heading = Math.PI;
+          carrying = false;
+        }
+
+        df.group.position.z = zPos;
+        df.group.rotation.y = heading;
+        df.carriage.position.y = forkY;
+        df.carriedPallet.visible = carrying;
+        df.truckPallet.visible = !carrying;
+      }
+
+      // Freight Supply Chain Vehicles
+      animated.trafficVehiclesFreight.forEach((vehicle) => {
+        const progress = (elapsed * vehicle.speed + vehicle.offset) % 1;
+        vehicle.route.getPointAt(progress, tmpVehiclePoint);
+        vehicle.route.getTangentAt(progress, tmpVehicleTangent);
+        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.06, tmpVehiclePoint.z);
+        vehicle.mesh.lookAt(
+          tmpVehiclePoint.x + tmpVehicleTangent.x,
+          0.06,
+          tmpVehiclePoint.z + tmpVehicleTangent.z
+        );
+      });
+
+      // Downtown & Tech Commuter Vehicles
+      animated.trafficVehiclesInner.forEach((vehicle) => {
+        const progress = (elapsed * vehicle.speed + vehicle.offset) % 1;
+        vehicle.route.getPointAt(progress, tmpVehiclePoint);
+        vehicle.route.getTangentAt(progress, tmpVehicleTangent);
+        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.06, tmpVehiclePoint.z);
+        vehicle.mesh.lookAt(
+          tmpVehiclePoint.x + tmpVehicleTangent.x,
+          0.06,
+          tmpVehiclePoint.z + tmpVehicleTangent.z
+        );
       });
 
       // Ring-road traffic
