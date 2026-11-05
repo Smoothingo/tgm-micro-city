@@ -1335,6 +1335,13 @@
     const eastHwy = new THREE.Group();
     addBox(eastHwy, 192, 0.25, 11.2, MAT.road, 124, 0.12, 0, { cast: false });
     addBox(eastHwy, 192, 0.35, 0.6, MAT.metalDark, 124, 0.35, 0, { cast: false });
+    // Highway Yellow Centerlines & White Lane Markers
+    addBox(eastHwy, 190, 0.018, 0.14, MAT.warmLine, 124, 0.254, -0.09, { cast: false });
+    addBox(eastHwy, 190, 0.018, 0.14, MAT.warmLine, 124, 0.254, 0.09, { cast: false });
+    for (let px = 38; px <= 210; px += 4.5) {
+      addBox(eastHwy, 2.2, 0.018, 0.12, MAT.whiteLine, px, 0.254, -2.8, { cast: false });
+      addBox(eastHwy, 2.2, 0.018, 0.12, MAT.whiteLine, px, 0.254, 2.8, { cast: false });
+    }
     for (let px = 55; px <= 190; px += 28) {
       addCylinder(eastHwy, 0.45, 0.45, 0.4, 8, MAT.concrete, px, -0.15, -4.8);
       addCylinder(eastHwy, 0.45, 0.45, 0.4, 8, MAT.concrete, px, -0.15, 4.8);
@@ -1412,79 +1419,100 @@
     const cityD = 116;
     const cityCenterX = 10;
     const cityCenterZ = 0;
+    // Base foundation plinth (top surface at y = 0.00)
     addBox(cityBase, cityW + 4, 0.8, cityD + 4, MAT.base, cityCenterX, -0.4, cityCenterZ);
-    addBox(cityBase, cityW, 0.15, cityD, standard(0x131e26, { roughness: 0.88 }), cityCenterX, 0.02, cityCenterZ, { cast: false });
+    // Ground terrain plate (top surface at y = 0.00)
+    addBox(cityBase, cityW, 0.10, cityD, standard(0x131e26, { roughness: 0.88 }), cityCenterX, -0.05, cityCenterZ, { cast: false });
 
     // ------------------------------------------------------------
     // STRATEGIC STREET GRID & CONNECTING ARTERIES
     // ------------------------------------------------------------
     // Major East-West Arteries (z coordinates)
     const EW_STREETS = [
-      { z: -46.0, w: 5.2, name: 'North Industrial Way' },
-      { z: -20.0, w: 5.6, name: 'Factory-to-Hub Boulevard' },
-      { z: 0.0, w: 6.2, name: 'Grand Central Boulevard' },
-      { z: 14.0, w: 5.6, name: 'Logistics-to-Tower Commerce Way' },
-      { z: 44.0, w: 5.2, name: 'South Waterfront Way' }
+      { z: -46.0, w: 5.2, name: "North Industrial Way" },
+      { z: -20.0, w: 5.6, name: "Factory-to-Hub Boulevard" },
+      { z: 0.0, w: 6.2, name: "Grand Central Boulevard" },
+      { z: 14.0, w: 5.6, name: "Logistics-to-Tower Commerce Way" },
+      { z: 44.0, w: 5.2, name: "South Waterfront Way" }
     ];
 
     // Major North-South Arteries (x coordinates)
     const NS_STREETS = [
-      { x: -38.0, w: 5.8, name: 'Harbor Wharf Access Road' },
-      { x: -24.0, w: 5.6, name: 'Harbor-to-Factory Freight Highway' },
-      { x: -12.0, w: 4.8, name: 'West Commercial Avenue' },
-      { x: 0.0, w: 6.2, name: 'Grand Central Avenue' },
-      { x: 14.0, w: 4.8, name: 'East Commercial Avenue' },
-      { x: 26.0, w: 5.6, name: 'Hub-to-Tower Tech Corridor' },
-      { x: 44.0, w: 5.2, name: 'East Metropolitan Boulevard' }
+      { x: -38.0, w: 5.8, name: "Harbor Wharf Access Road" },
+      { x: -24.0, w: 5.6, name: "Harbor-to-Factory Freight Highway" },
+      { x: -12.0, w: 4.8, name: "West Commercial Avenue" },
+      { x: 0.0, w: 6.2, name: "Grand Central Avenue" },
+      { x: 14.0, w: 4.8, name: "East Commercial Avenue" },
+      { x: 26.0, w: 5.6, name: "Hub-to-Tower Tech Corridor" },
+      { x: 44.0, w: 5.2, name: "East Metropolitan Boulevard" }
     ];
 
-    // Render Asphalt Pavement Ribbons
+    // Road Markings: Solid, crisp, non-fading depth-offset materials (always render close & far)
     const roadMat = standard(0x0e171f, { roughness: 0.82 });
+    const yellowMarkingMat = new THREE.MeshBasicMaterial({
+      color: 0xffbe3b,
+      polygonOffset: true,
+      polygonOffsetFactor: -3.0,
+      polygonOffsetUnits: -4.0
+    });
+    const whiteMarkingMat = new THREE.MeshBasicMaterial({
+      color: 0xf5f8fa,
+      polygonOffset: true,
+      polygonOffsetFactor: -3.0,
+      polygonOffsetUnits: -4.0
+    });
+
+    // Render Asphalt Pavement Ribbons (Top surface at y = 0.050)
     EW_STREETS.forEach((st) => {
-      addBox(cityBase, 96, 0.05, st.w, roadMat, 10, 0.045, st.z, { cast: false });
-      // Double solid yellow center divider
-      addBox(cityBase, 94, 0.012, 0.08, basicGlow(0xffc35f, 0.95), 10, 0.076, st.z - 0.08, { cast: false });
-      addBox(cityBase, 94, 0.012, 0.08, basicGlow(0xffc35f, 0.95), 10, 0.076, st.z + 0.08, { cast: false });
+      addBox(cityBase, 96, 0.05, st.w, roadMat, 10, 0.025, st.z, { cast: false });
+      // Double solid yellow center divider (elevated at y = 0.058, sitting right on asphalt)
+      addBox(cityBase, 94, 0.015, 0.12, yellowMarkingMat, 10, 0.058, st.z - 0.10, { cast: false });
+      addBox(cityBase, 94, 0.015, 0.12, yellowMarkingMat, 10, 0.058, st.z + 0.10, { cast: false });
     });
 
     NS_STREETS.forEach((st) => {
-      addBox(cityBase, st.w, 0.05, 108, roadMat, st.x, 0.045, 0, { cast: false });
+      addBox(cityBase, st.w, 0.05, 108, roadMat, st.x, 0.025, 0, { cast: false });
       // Double solid yellow center divider
-      addBox(cityBase, 0.08, 0.012, 106, basicGlow(0xffc35f, 0.95), st.x - 0.08, 0.076, 0, { cast: false });
-      addBox(cityBase, 0.08, 0.012, 106, basicGlow(0xffc35f, 0.95), st.x + 0.08, 0.076, 0, { cast: false });
+      addBox(cityBase, 0.12, 0.015, 106, yellowMarkingMat, st.x - 0.10, 0.058, 0, { cast: false });
+      addBox(cityBase, 0.12, 0.015, 106, yellowMarkingMat, st.x + 0.10, 0.058, 0, { cast: false });
     });
 
-    // Dashed White Lane Dividers & Pedestrian Crosswalks
+    // Dashed White Lane Dividers
     for (let x = -36; x <= 56; x += 3.6) {
       if (Math.abs(x) > 3.5) {
         EW_STREETS.forEach((st) => {
-          addBox(cityBase, 1.6, 0.012, 0.09, basicGlow(0xffffff, 0.95), x, 0.077, st.z - st.w * 0.28, { cast: false });
-          addBox(cityBase, 1.6, 0.012, 0.09, basicGlow(0xffffff, 0.95), x, 0.077, st.z + st.w * 0.28, { cast: false });
+          addBox(cityBase, 1.8, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z - st.w * 0.28, { cast: false });
+          addBox(cityBase, 1.8, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z + st.w * 0.28, { cast: false });
         });
       }
     }
     for (let z = -52; z <= 52; z += 3.6) {
       if (Math.abs(z) > 3.5) {
         NS_STREETS.forEach((st) => {
-          addBox(cityBase, 0.09, 0.012, 1.6, basicGlow(0xffffff, 0.95), st.x - st.w * 0.28, 0.077, z, { cast: false });
-          addBox(cityBase, 0.09, 0.012, 1.6, basicGlow(0xffffff, 0.95), st.x + st.w * 0.28, 0.077, z, { cast: false });
+          addBox(cityBase, 0.12, 0.015, 1.8, whiteMarkingMat, st.x - st.w * 0.28, 0.058, z, { cast: false });
+          addBox(cityBase, 0.12, 0.015, 1.8, whiteMarkingMat, st.x + st.w * 0.28, 0.058, z, { cast: false });
         });
       }
     }
 
-    // Pedestrian Zebra Crosswalks at all Intersections
+    // Pedestrian Zebra Crosswalks & Stop Bars at all Intersections
     NS_STREETS.forEach((ns) => {
       EW_STREETS.forEach((ew) => {
         for (let s = -3; s <= 3; s++) {
-          addBox(cityBase, 0.35, 0.012, 1.4, basicGlow(0xffffff, 0.95), ns.x + s * 0.65, 0.078, ew.z + ew.w * 0.5 + 0.8, { cast: false });
-          addBox(cityBase, 0.35, 0.012, 1.4, basicGlow(0xffffff, 0.95), ns.x + s * 0.65, 0.078, ew.z - ew.w * 0.5 - 0.8, { cast: false });
-          addBox(cityBase, 1.4, 0.012, 0.35, basicGlow(0xffffff, 0.95), ns.x + ns.w * 0.5 + 0.8, 0.078, ew.z + s * 0.65, { cast: false });
-          addBox(cityBase, 1.4, 0.012, 0.35, basicGlow(0xffffff, 0.95), ns.x - ns.w * 0.5 - 0.8, 0.078, ew.z + s * 0.65, { cast: false });
+          addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, ns.x + s * 0.65, 0.058, ew.z + ew.w * 0.5 + 1.0, { cast: false });
+          addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, ns.x + s * 0.65, 0.058, ew.z - ew.w * 0.5 - 1.0, { cast: false });
+          addBox(cityBase, 1.8, 0.015, 0.42, whiteMarkingMat, ns.x + ns.w * 0.5 + 1.0, 0.058, ew.z + s * 0.65, { cast: false });
+          addBox(cityBase, 1.8, 0.015, 0.42, whiteMarkingMat, ns.x - ns.w * 0.5 - 1.0, 0.058, ew.z + s * 0.65, { cast: false });
         }
+        // Transverse White Stop Bars before crossings
+        addBox(cityBase, ns.w * 0.82, 0.015, 0.26, whiteMarkingMat, ns.x, 0.058, ew.z + ew.w * 0.5 + 2.2, { cast: false });
+        addBox(cityBase, ns.w * 0.82, 0.015, 0.26, whiteMarkingMat, ns.x, 0.058, ew.z - ew.w * 0.5 - 2.2, { cast: false });
+        addBox(cityBase, 0.26, 0.015, ew.w * 0.82, whiteMarkingMat, ns.x + ns.w * 0.5 + 2.2, 0.058, ew.z, { cast: false });
+        addBox(cityBase, 0.26, 0.015, ew.w * 0.82, whiteMarkingMat, ns.x - ns.w * 0.5 - 2.2, 0.058, ew.z, { cast: false });
       });
     });
 
-    // Raised Concrete Sidewalk Curbs for all City Blocks
+    // Raised Concrete Sidewalk Curbs for all City Blocks (Top surface at y = 0.090 to 0.100)
     const curbMat = standard(0x283845, { roughness: 0.72 });
     const sidewalkMat = standard(0x1e2e3a, { roughness: 0.8 });
     for (let i = 0; i < NS_STREETS.length - 1; i++) {
@@ -1499,13 +1527,13 @@
         const bz = (z1 + z2) / 2;
 
         if (bw > 2 && bd > 2) {
-          // Sidewalk base slab
-          addBox(cityBase, bw - 0.3, 0.09, bd - 0.3, sidewalkMat, bx, 0.065, bz, { cast: false });
-          // Curb border trim
-          addBox(cityBase, bw, 0.06, 0.25, curbMat, bx, 0.06, z1 + 0.12, { cast: false });
-          addBox(cityBase, bw, 0.06, 0.25, curbMat, bx, 0.06, z2 - 0.12, { cast: false });
-          addBox(cityBase, 0.25, 0.06, bd, curbMat, x1 + 0.12, 0.06, bz, { cast: false });
-          addBox(cityBase, 0.25, 0.06, bd, curbMat, x2 - 0.12, 0.06, bz, { cast: false });
+          // Sidewalk base slab (top at 0.090, 4cm above road 0.050)
+          addBox(cityBase, bw - 0.4, 0.06, bd - 0.4, sidewalkMat, bx, 0.06, bz, { cast: false });
+          // Curb border trim (top at 0.100, 5cm above road 0.050)
+          addBox(cityBase, bw, 0.07, 0.25, curbMat, bx, 0.065, z1 + 0.12, { cast: false });
+          addBox(cityBase, bw, 0.07, 0.25, curbMat, bx, 0.065, z2 - 0.12, { cast: false });
+          addBox(cityBase, 0.25, 0.07, bd, curbMat, x1 + 0.12, 0.065, bz, { cast: false });
+          addBox(cityBase, 0.25, 0.07, bd, curbMat, x2 - 0.12, 0.065, bz, { cast: false });
         }
       }
     }
@@ -2881,67 +2909,67 @@
     const r = boulevardR;
     const routePoints = [];
 
-    routePoints.push(new THREE.Vector3(-hx + r, 0.06, -hz));
-    routePoints.push(new THREE.Vector3(0, 0.06, -hz));
-    routePoints.push(new THREE.Vector3(hx - r, 0.06, -hz));
+    routePoints.push(new THREE.Vector3(-hx + r, 0.05, -hz));
+    routePoints.push(new THREE.Vector3(0, 0.05, -hz));
+    routePoints.push(new THREE.Vector3(hx - r, 0.05, -hz));
     const cxNE = hx - r, czNE = -hz + r;
     for (let i = 1; i <= 4; i++) {
       const ang = -Math.PI / 2 + (Math.PI / 2) * (i / 5);
-      routePoints.push(new THREE.Vector3(cxNE + r * Math.cos(ang), 0.06, czNE + r * Math.sin(ang)));
+      routePoints.push(new THREE.Vector3(cxNE + r * Math.cos(ang), 0.05, czNE + r * Math.sin(ang)));
     }
-    routePoints.push(new THREE.Vector3(hx, 0.06, -hz + r));
-    routePoints.push(new THREE.Vector3(hx, 0.06, 0));
-    routePoints.push(new THREE.Vector3(hx, 0.06, hz - r));
+    routePoints.push(new THREE.Vector3(hx, 0.05, -hz + r));
+    routePoints.push(new THREE.Vector3(hx, 0.05, 0));
+    routePoints.push(new THREE.Vector3(hx, 0.05, hz - r));
     const cxSE = hx - r, czSE = hz - r;
     for (let i = 1; i <= 4; i++) {
       const ang = 0 + (Math.PI / 2) * (i / 5);
-      routePoints.push(new THREE.Vector3(cxSE + r * Math.cos(ang), 0.06, czSE + r * Math.sin(ang)));
+      routePoints.push(new THREE.Vector3(cxSE + r * Math.cos(ang), 0.05, czSE + r * Math.sin(ang)));
     }
-    routePoints.push(new THREE.Vector3(hx - r, 0.06, hz));
-    routePoints.push(new THREE.Vector3(0, 0.06, hz));
-    routePoints.push(new THREE.Vector3(-hx + r, 0.06, hz));
+    routePoints.push(new THREE.Vector3(hx - r, 0.05, hz));
+    routePoints.push(new THREE.Vector3(0, 0.05, hz));
+    routePoints.push(new THREE.Vector3(-hx + r, 0.05, hz));
     const cxSW = -hx + r, czSW = hz - r;
     for (let i = 1; i <= 4; i++) {
       const ang = Math.PI / 2 + (Math.PI / 2) * (i / 5);
-      routePoints.push(new THREE.Vector3(cxSW + r * Math.cos(ang), 0.06, czSW + r * Math.sin(ang)));
+      routePoints.push(new THREE.Vector3(cxSW + r * Math.cos(ang), 0.05, czSW + r * Math.sin(ang)));
     }
-    routePoints.push(new THREE.Vector3(-hx, 0.06, hz - r));
-    routePoints.push(new THREE.Vector3(-hx, 0.06, 0));
-    routePoints.push(new THREE.Vector3(-hx, 0.06, -hz + r));
+    routePoints.push(new THREE.Vector3(-hx, 0.05, hz - r));
+    routePoints.push(new THREE.Vector3(-hx, 0.05, 0));
+    routePoints.push(new THREE.Vector3(-hx, 0.05, -hz + r));
     const cxNW = -hx + r, czNW = -hz + r;
     for (let i = 1; i <= 4; i++) {
       const ang = Math.PI + (Math.PI / 2) * (i / 5);
-      routePoints.push(new THREE.Vector3(cxNW + r * Math.cos(ang), 0.06, czNW + r * Math.sin(ang)));
+      routePoints.push(new THREE.Vector3(cxNW + r * Math.cos(ang), 0.05, czNW + r * Math.sin(ang)));
     }
     const trafficRoute = new THREE.CatmullRomCurve3(routePoints, true, 'centripetal', 0.08);
 
     // Circuit 2: Strategic Harbor-to-Factory Freight Route
     const freightWaypoints = [
-      new THREE.Vector3(-38.0, 0.06, 32.0),
-      new THREE.Vector3(-38.0, 0.06, 14.0),
-      new THREE.Vector3(-38.0, 0.06, -10.0),
-      new THREE.Vector3(-38.0, 0.06, -20.0),
-      new THREE.Vector3(-32.0, 0.06, -20.0),
-      new THREE.Vector3(-24.0, 0.06, -20.0), // Factory loading apron
-      new THREE.Vector3(-24.0, 0.06, -8.0),
-      new THREE.Vector3(-24.0, 0.06, 8.0),
-      new THREE.Vector3(-24.0, 0.06, 24.0),  // Logistics terminal
-      new THREE.Vector3(-32.0, 0.06, 32.0)
+      new THREE.Vector3(-38.0, 0.05, 32.0),
+      new THREE.Vector3(-38.0, 0.05, 14.0),
+      new THREE.Vector3(-38.0, 0.05, -10.0),
+      new THREE.Vector3(-38.0, 0.05, -20.0),
+      new THREE.Vector3(-32.0, 0.05, -20.0),
+      new THREE.Vector3(-24.0, 0.05, -20.0), // Factory loading apron
+      new THREE.Vector3(-24.0, 0.05, -8.0),
+      new THREE.Vector3(-24.0, 0.05, 8.0),
+      new THREE.Vector3(-24.0, 0.05, 24.0),  // Logistics terminal
+      new THREE.Vector3(-32.0, 0.05, 32.0)
     ];
     const freightRoute = new THREE.CatmullRomCurve3(freightWaypoints, true, 'centripetal', 0.08);
 
     // Circuit 3: Downtown & Tech Commuter Circuit
     const commuterWaypoints = [
-      new THREE.Vector3(0.0, 0.06, 0.0),    // Central Plaza
-      new THREE.Vector3(14.0, 0.06, 0.0),
-      new THREE.Vector3(26.0, 0.06, 0.0),
-      new THREE.Vector3(26.0, 0.06, 24.0),  // Downtown Tower
-      new THREE.Vector3(38.0, 0.06, 24.0),
-      new THREE.Vector3(38.0, 0.06, 0.0),
-      new THREE.Vector3(26.0, 0.06, -20.0),
-      new THREE.Vector3(26.0, 0.06, -28.0), // Tech Hub
-      new THREE.Vector3(14.0, 0.06, -20.0),
-      new THREE.Vector3(0.0, 0.06, -20.0)
+      new THREE.Vector3(0.0, 0.05, 0.0),    // Central Plaza
+      new THREE.Vector3(14.0, 0.05, 0.0),
+      new THREE.Vector3(26.0, 0.05, 0.0),
+      new THREE.Vector3(26.0, 0.05, 24.0),  // Downtown Tower
+      new THREE.Vector3(38.0, 0.05, 24.0),
+      new THREE.Vector3(38.0, 0.05, 0.0),
+      new THREE.Vector3(26.0, 0.05, -20.0),
+      new THREE.Vector3(26.0, 0.05, -28.0), // Tech Hub
+      new THREE.Vector3(14.0, 0.05, -20.0),
+      new THREE.Vector3(0.0, 0.05, -20.0)
     ];
     const commuterRoute = new THREE.CatmullRomCurve3(commuterWaypoints, true, 'centripetal', 0.08);
 
@@ -5208,10 +5236,10 @@
         const progress = (elapsed * vehicle.speed + vehicle.offset) % 1;
         vehicle.route.getPointAt(progress, tmpVehiclePoint);
         vehicle.route.getTangentAt(progress, tmpVehicleTangent);
-        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.06, tmpVehiclePoint.z);
+        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.05, tmpVehiclePoint.z);
         vehicle.mesh.lookAt(
           tmpVehiclePoint.x + tmpVehicleTangent.x,
-          0.06,
+          0.05,
           tmpVehiclePoint.z + tmpVehicleTangent.z
         );
       });
@@ -5221,10 +5249,10 @@
         const progress = (elapsed * vehicle.speed + vehicle.offset) % 1;
         vehicle.route.getPointAt(progress, tmpVehiclePoint);
         vehicle.route.getTangentAt(progress, tmpVehicleTangent);
-        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.06, tmpVehiclePoint.z);
+        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.05, tmpVehiclePoint.z);
         vehicle.mesh.lookAt(
           tmpVehiclePoint.x + tmpVehicleTangent.x,
-          0.06,
+          0.05,
           tmpVehiclePoint.z + tmpVehicleTangent.z
         );
       });
@@ -5234,10 +5262,10 @@
         const progress = (elapsed * vehicle.speed + vehicle.offset) % 1;
         trafficRoute.getPointAt(progress, tmpVehiclePoint);
         trafficRoute.getTangentAt(progress, tmpVehicleTangent);
-        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.06, tmpVehiclePoint.z);
+        vehicle.mesh.position.set(tmpVehiclePoint.x, 0.05, tmpVehiclePoint.z);
         vehicle.mesh.lookAt(
           tmpVehiclePoint.x + tmpVehicleTangent.x,
-          0.06,
+          0.05,
           tmpVehiclePoint.z + tmpVehicleTangent.z
         );
       });
