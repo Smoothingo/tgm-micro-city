@@ -1002,6 +1002,18 @@
       leafC: standard(0x1f5144, { roughness: 1, flatShading: true })
     };
 
+    // High-Poly Road & Curb Materials (Uniform 5.2m City & Regional Grid)
+    const roadMat = standard(0x101a22, { roughness: 0.85, metalness: 0.08 });
+    const roadBaseMat = standard(0x0a1014, { roughness: 0.95 });
+    const curbMat = standard(0x384a56, { roughness: 0.65, metalness: 0.15 });
+    const curbTopMat = standard(0x4a5d6a, { roughness: 0.60, metalness: 0.12 });
+    const gutterMat = standard(0x080d11, { roughness: 0.92, metalness: 0.10 });
+    const sidewalkMat = standard(0x1c2b36, { roughness: 0.82, metalness: 0.06 });
+
+    // Crisp, Non-Flickering Road Markings (Physical 15mm clearance above asphalt)
+    const yellowMarkingMat = new THREE.MeshBasicMaterial({ color: 0xffbe3b });
+    const whiteMarkingMat = new THREE.MeshBasicMaterial({ color: 0xf5f8fa });
+
     function addBox(parent, w, h, d, material, x = 0, y = 0, z = 0, options = {}) {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
       mesh.position.set(x, y, z);
@@ -1497,18 +1509,6 @@
       { x: 13.0, w: 5.2, name: "East Innovation Corridor", minZ: -42, maxZ: 42 },
       { x: 38.0, w: 5.2, name: "East Metropolitan Expressway", minZ: -42, maxZ: 42 }
     ];
-
-    // High-Poly Road & Curb Materials
-    const roadMat = standard(0x101a22, { roughness: 0.85, metalness: 0.08 });
-    const roadBaseMat = standard(0x0a1014, { roughness: 0.95 });
-    const curbMat = standard(0x384a56, { roughness: 0.65, metalness: 0.15 });
-    const curbTopMat = standard(0x4a5d6a, { roughness: 0.60, metalness: 0.12 });
-    const gutterMat = standard(0x080d11, { roughness: 0.92, metalness: 0.10 });
-    const sidewalkMat = standard(0x1c2b36, { roughness: 0.82, metalness: 0.06 });
-
-    // Crisp, Non-Flickering Road Markings (Physical 15mm clearance above asphalt)
-    const yellowMarkingMat = new THREE.MeshBasicMaterial({ color: 0xffbe3b });
-    const whiteMarkingMat = new THREE.MeshBasicMaterial({ color: 0xf5f8fa });
 
     // Helper: Build Raised Multi-Layer Street Ribbon with Granite Curbs & Gutters
     EW_STREETS.forEach((st) => {
