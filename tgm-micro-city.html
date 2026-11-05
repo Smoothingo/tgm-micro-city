@@ -2079,9 +2079,7 @@
     addBox(tower, 6.2, 4.8, 6.2, towerGlass, 0, 19.5, 0);
     addBox(tower, 6.8, 0.25, 6.8, MAT.metalDark, 0, 22.0, 0);
 
-    // Mid-Tower Cantilevered Skybridge
-    addBox(tower, 2.4, 1.8, 3.8, towerGlass, 0, 12.5, 5.2);
-    addBox(tower, 2.6, 0.14, 4.0, towerAccent, 0, 13.4, 5.2, { cast: false });
+    // Clean flush architectural facade (removed protruding cube)
 
     // Rooftop Reinforced Helipad with glowing "H" & perimeter lights
     const helipad = new THREE.Group();
@@ -2152,13 +2150,7 @@
     }
     logistics.add(dockBay);
 
-    // Overhead Automated Sorting Conveyor Bridge (connecting Logistics to Harbor)
-    const sorterBridge = new THREE.Group();
-    sorterBridge.position.set(-7.5, 3.6, 2.4);
-    addBox(sorterBridge, 4.5, 1.5, 1.6, MAT.steel, 0, 0, 0);
-    addBox(sorterBridge, 4.6, 0.08, 1.7, logisticsAccent, 0, 0.78, 0, { cast: false });
-    addCylinder(sorterBridge, 0.12, 0.12, 3.6, 8, MAT.steel, -1.8, -1.8, 0);
-    logistics.add(sorterBridge);
+    // Clean logistics terminal wall (removed protruding box on pole)
 
     // Outdoor Container Staging Yard
     const yardColors = [0x1994b2, 0xe65100, 0x005832, 0xd4a017];
@@ -2522,7 +2514,7 @@
       // 7. Exterior Steel Trucks (cleanly placed in designated loading bays with ZERO wall clipping)
       createSteelTruck(harbor, -32.5, 6.0, 0, { color: 0x1b3b47, cargo: 'coils' });
       createSteelTruck(harbor, -32.5, 32.0, Math.PI, { color: 0x3d3935, cargo: 'beams' });
-      createSteelTruck(harbor, -24.0, 31.5, 0, { color: 0x284236, cargo: 'container', containerColor: 0x1994b2 });
+      createSteelTruck(harbor, -34.0, 44.0, 0, { color: 0x284236, cargo: 'container', containerColor: 0x1994b2 });
     }
 
     // ------------------------------------------------------------
@@ -3865,16 +3857,16 @@
 
     // 01 — Machine hall
     const factoryRoom = createRoom('factory', {
-      width: 10.4,
-      depth: 7.6,
-      height: 4.2,
+      width: 14.5,
+      depth: 10.5,
+      height: 5.0,
       accent: 0xff8f5c,
       wallColor: 0x151d22,
       lightColor: 0xffe3c4,
-      lightIntensity: 30,
-      accentIntensity: 18,
-      cam: [0.0, 3.2, 3.4],
-      look: [0.0, 1.2, -1.2]
+      lightIntensity: 34,
+      accentIntensity: 20,
+      cam: [0.0, 3.4, 3.8],
+      look: [0.0, 1.2, -1.0]
     });
     const factoryG = factoryRoom.group;
 
@@ -3969,6 +3961,8 @@
     addBox(factoryG, 0.5, 0.32, 0.03, basicGlow(0x8fe9bb, 0.38), 3.02, 0.98, 2.005, { cast: false });
     addBox(factoryG, 0.65, 0.055, 0.48, basicGlow(0xff8f5c, 0.5), 3.02, 1.35, 1.78, { cast: false });
     addBox(factoryG, 1.0, 0.1, 0.78, standard(0x70553f, { roughness: 0.94 }), -2.95, 0.13, 1.7);
+    // Working material-transport forklift in factory corridor (safe 4.5m clearance from walls)
+    createForklift(factoryG, 0xff8f5c, { axis: 'x', x: -2.8, z: -0.4, range: 5.2, speed: 0.10, phase: 0.5 });
     [-0.28, 0.26].forEach((x, i) => {
       addBox(factoryG, 0.34, 0.28 + i * 0.08, 0.3, standard(0x51666f, { roughness: 0.55, metalness: 0.55 }), -2.95 + x, 0.34 + i * 0.04, 1.7);
     });
@@ -4221,16 +4215,16 @@
     }
 
     const logisticsRoom = createRoom('logistics', {
-      width: 12.8,
-      depth: 8.8,
-      height: 4.5,
+      width: 17.5,
+      depth: 13.5,
+      height: 5.4,
       accent: 0x6fe3a8,
       wallColor: 0x111d20,
       lightColor: 0xf2fff4,
       lightIntensity: 48,
       accentIntensity: 24,
-      cam: [0.0, 3.2, 3.5],
-      look: [0.0, 1.25, -1.8]
+      cam: [0.0, 3.4, 4.2],
+      look: [0.0, 1.25, -1.5]
     });
     const logisticsG = logisticsRoom.group;
 
@@ -4284,14 +4278,14 @@
     addInteriorConveyor(logisticsG, -4.2, -5.2, 4.2, 0, 0x6fe3a8, 'crate', 6);
     addRobotArm(logisticsG, 4.8, -4.8, Math.PI, 0x6fe3a8, 0.85, 1.08);
 
-    // Autonomous traffic: 3 Forklifts & 4 AGVs positioned clear of near-foreground
-    createForklift(logisticsG, 0x6fe3a8, { axis: 'z', x: -3.6, z: 1.2, range: 4.8, speed: 0.12, phase: 0.1 });
-    createForklift(logisticsG, 0xffd37a, { axis: 'z', x: 3.6, z: 0.8, range: 4.4, speed: 0.09, phase: 0.95 });
-    createForklift(logisticsG, 0x6fe3a8, { axis: 'x', x: -4.5, z: -4.4, range: 9.0, speed: 0.13, phase: 0.4 });
-    createAGV(logisticsG, 0x6fe3a8, { axis: 'x', x: -5.2, z: -1.6, range: 10.4, speed: 0.28, phase: 0.3 });
-    createAGV(logisticsG, 0xffd37a, { axis: 'x', x: -5.2, z: 1.6, range: 10.4, speed: 0.24, phase: 1.5 });
-    createAGV(logisticsG, 0x4be4ff, { axis: 'z', x: -1.9, z: 1.8, range: 5.2, speed: 0.20, phase: 2.2 });
-    createAGV(logisticsG, 0x6fe3a8, { axis: 'z', x: 1.9, z: 1.4, range: 4.8, speed: 0.22, phase: 0.8 });
+    // Autonomous traffic: 3 Forklifts & 4 AGVs strictly contained in open aisles (min 4m from walls)
+    createForklift(logisticsG, 0x6fe3a8, { axis: 'x', x: -3.5, z: 0.4, range: 7.0, speed: 0.11, phase: 0.2 });
+    createForklift(logisticsG, 0xffd37a, { axis: 'z', x: -3.2, z: 2.2, range: 4.0, speed: 0.10, phase: 0.7 });
+    createForklift(logisticsG, 0x6fe3a8, { axis: 'z', x: 3.2, z: 2.0, range: 4.0, speed: 0.09, phase: 1.3 });
+    createAGV(logisticsG, 0x6fe3a8, { axis: 'x', x: -3.8, z: -1.8, range: 7.6, speed: 0.22, phase: 0.3 });
+    createAGV(logisticsG, 0xffd37a, { axis: 'x', x: -3.8, z: 2.6, range: 7.6, speed: 0.20, phase: 1.5 });
+    createAGV(logisticsG, 0x4be4ff, { axis: 'z', x: -1.2, z: 2.0, range: 3.8, speed: 0.18, phase: 2.0 });
+    createAGV(logisticsG, 0x6fe3a8, { axis: 'z', x: 1.2, z: 2.0, range: 3.8, speed: 0.19, phase: 0.8 });
 
     // Dispatch terminal and harbor clerk station on left flank
     addDesk(logisticsG, -6.2, 4.2, 1.75, 0.82, { accent: 0x6fe3a8 });
