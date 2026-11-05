@@ -750,9 +750,9 @@
       antialias: true,
       alpha: true,
       powerPreference: 'high-performance',
-      logarithmicDepthBuffer: true
+      logarithmicDepthBuffer: false
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
@@ -1328,6 +1328,21 @@
       transparent: true,
       opacity: 0.96
     });
+    oceanMat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = { value: 0 };
+      oceanMat.userData.shader = shader;
+      shader.vertexShader = `
+        uniform float uTime;
+      ` + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        float wave = sin(position.x * 0.38 + uTime * 1.7) * 0.08 + cos(position.z * 0.32 + uTime * 1.3) * 0.06;
+        transformed.y += wave;
+        `
+      );
+    };
     const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
     oceanMesh.position.set(-133, -0.62, 0);
     oceanMesh.receiveShadow = true;
@@ -1638,79 +1653,37 @@
       addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.065, pt.z - 4.9, { cast: false });
     });
 
-    // 2. Safe Roundabout Approach Crossings (Set back 14.5m with Raised Pedestrian Refuge Islands)
-    [
-      { axis: 'z', x: 0, z: -14.5, angle: 0 },
-      { axis: 'z', x: 0, z: 14.5, angle: Math.PI },
-      { axis: 'x', x: -14.5, z: 0, angle: -Math.PI / 2 },
-      { axis: 'x', x: 14.5, z: 0, angle: Math.PI / 2 }
-    ].forEach((app) => {
-      if (app.axis === 'z') {
-        // Center raised pedestrian refuge island (Mittelinsel)
-        addBox(cityBase, 0.85, 0.12, 2.6, curbMat, app.x, 0.06, app.z, { cast: false });
-        addBox(cityBase, 0.75, 0.015, 2.4, MAT.concrete, app.x, 0.122, app.z, { cast: false });
-        // Illuminated amber safety bollards
-        [-1.0, 1.0].forEach((bz) => {
-          addCylinder(cityBase, 0.07, 0.07, 0.7, 8, MAT.steelDark, app.x, 0.45, app.z + bz, { cast: false });
-          addSphere(cityBase, 0.08, basicGlow(0xffbe3b, 1.6), app.x, 0.82, app.z + bz);
-        });
-        // Flanking zebra stripes
-        [-1, 1].forEach((side) => {
-          const sideX = app.x + side * 1.85;
-          for (let s = -1; s <= 1; s++) {
-            addBox(cityBase, 0.40, 0.015, 1.8, whiteMarkingMat, sideX + s * 0.65, 0.065, app.z, { cast: false });
-          }
-        });
-        // Stop bar before crossing
-        const stopZ = app.z + (app.z > 0 ? 1.6 : -1.6);
-        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x - 1.85, 0.065, stopZ, { cast: false });
-        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x + 1.85, 0.065, stopZ, { cast: false });
-      } else {
-        // Center raised pedestrian refuge island (Mittelinsel)
-        addBox(cityBase, 2.6, 0.12, 0.85, curbMat, app.x, 0.06, app.z, { cast: false });
-        addBox(cityBase, 2.4, 0.015, 0.75, MAT.concrete, app.x, 0.122, app.z, { cast: false });
-        // Illuminated amber safety bollards
-        [-1.0, 1.0].forEach((bx) => {
-          addCylinder(cityBase, 0.07, 0.07, 0.7, 8, MAT.steelDark, app.x + bx, 0.45, app.z, { cast: false });
-          addSphere(cityBase, 0.08, basicGlow(0xffbe3b, 1.6), app.x + bx, 0.82, app.z);
-        });
-        // Flanking zebra stripes
-        [-1, 1].forEach((side) => {
-          const sideZ = app.z + side * 1.85;
-          for (let s = -1; s <= 1; s++) {
-            addBox(cityBase, 1.8, 0.015, 0.40, whiteMarkingMat, app.x, 0.065, sideZ + s * 0.65, { cast: false });
-          }
-        });
-        // Stop bar before crossing
-        const stopX = app.x + (app.x > 0 ? 1.6 : -1.6);
-        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.065, app.z - 1.85, { cast: false });
-        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.065, app.z + 1.85, { cast: false });
-      }
-    });
-
     // ============================================================
     // CENTRAL CIVIC ROUNDABOUT (European High-Tech Landmark Plaza)
     // ============================================================
     const plaza = new THREE.Group();
 
-    // 1. Outer Circular Paved Sidewalk & Granite Curb Ring (Radius 9.4m to 11.4m)
-    const outerSidewalkGeo = new THREE.RingGeometry(9.4, 11.4, 64);
-    outerSidewalkGeo.rotateX(-Math.PI / 2);
-    const outerSidewalk = new THREE.Mesh(outerSidewalkGeo, MAT.concrete);
-    outerSidewalk.position.y = 0.082;
-    outerSidewalk.receiveShadow = true;
-    plaza.add(outerSidewalk);
+    // 1. Four Corner Quadrant Sidewalks & Curbs (Leaving all 4 Avenue Mouths 100% Open & Unobstructed)
+    [
+      { start: 22 * Math.PI / 180, end: 68 * Math.PI / 180, mid: Math.PI / 4 },
+      { start: 112 * Math.PI / 180, end: 158 * Math.PI / 180, mid: 3 * Math.PI / 4 },
+      { start: 202 * Math.PI / 180, end: 248 * Math.PI / 180, mid: 5 * Math.PI / 4 },
+      { start: 292 * Math.PI / 180, end: 338 * Math.PI / 180, mid: 7 * Math.PI / 4 }
+    ].forEach((quad) => {
+      const arcLen = quad.end - quad.start;
+      // Corner Sidewalk Arc
+      const swGeo = new THREE.RingGeometry(9.4, 11.5, 24, 1, quad.start, arcLen);
+      swGeo.rotateX(-Math.PI / 2);
+      const sw = new THREE.Mesh(swGeo, MAT.concrete);
+      sw.position.y = 0.082;
+      sw.receiveShadow = true;
+      plaza.add(sw);
 
-    const outerCurbGeo = new THREE.RingGeometry(9.32, 9.46, 64);
-    outerCurbGeo.rotateX(-Math.PI / 2);
-    const outerCurb = new THREE.Mesh(outerCurbGeo, curbMat);
-    outerCurb.position.y = 0.095;
-    plaza.add(outerCurb);
+      // Corner Granite Curb Arc
+      const curbArcGeo = new THREE.RingGeometry(9.3, 9.46, 24, 1, quad.start, arcLen);
+      curbArcGeo.rotateX(-Math.PI / 2);
+      const curbArc = new THREE.Mesh(curbArcGeo, curbMat);
+      curbArc.position.y = 0.095;
+      plaza.add(curbArc);
 
-    // 4 Modern LED Promenade Light Lanterns on the Outer Sidewalk
-    [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4].forEach((ang) => {
-      const lx = Math.cos(ang) * 10.4;
-      const lz = Math.sin(ang) * 10.4;
+      // Promenade Light Lantern
+      const lx = Math.cos(quad.mid) * 10.4;
+      const lz = Math.sin(quad.mid) * 10.4;
       const pole = new THREE.Group();
       pole.position.set(lx, 0.08, lz);
       addCylinder(pole, 0.06, 0.08, 3.4, 8, MAT.steelDark, 0, 1.7, 0);
@@ -1748,14 +1721,12 @@
     laneDivider.position.y = 0.058;
     plaza.add(laneDivider);
 
-    // Yield "shark-teeth" markings at 4 roundabout avenue entry mouths (r = 9.4m)
+    // Clean transverse yield stop bars at the 4 avenue entry mouths
     [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2].forEach((rot) => {
       const yieldGroup = new THREE.Group();
       yieldGroup.position.set(0, 0.058, 0);
       yieldGroup.rotation.y = rot;
-      for (let y = -2; y <= 2; y++) {
-        addBox(yieldGroup, 0.28, 0.015, 0.28, whiteMarkingMat, y * 0.55, 0, 9.38, { cast: false });
-      }
+      addBox(yieldGroup, 4.4, 0.015, 0.22, whiteMarkingMat, 0, 0, 9.38, { cast: false });
       plaza.add(yieldGroup);
     });
 
@@ -2198,9 +2169,9 @@
     }
     createSmoke();
 
-    addBuildingLabel(factory, 'factory', 10.5);
-    addHitbox(factory, 17.0, 10.0, 15.0, 5.0);
-    scaleBuilding(factory, 'factory', 1.65, 1.55, 1.65);
+    addBuildingLabel(factory, 'factory', 11.5);
+    addHitbox(factory, 16.0, 9.0, 14.0, 4.5);
+    scaleBuilding(factory, 'factory', 1.05, 1.05, 1.05);
 
     // ------------------------------------------------------------
     // 02 — Hackathon Hub / Server Farm (Enlarged Futuristic Tech Campus)
@@ -2297,8 +2268,8 @@
     animated.hubCore = hubCore;
 
     addBuildingLabel(hub, 'hub', 15.5);
-    addHitbox(hub, 16.5, 15.5, 15.5, 7.5);
-    scaleBuilding(hub, 'hub', 1.65, 1.55, 1.65);
+    addHitbox(hub, 15.0, 14.0, 15.0, 7.0);
+    scaleBuilding(hub, 'hub', 1.05, 1.05, 1.05);
 
     // ------------------------------------------------------------
     // 03 — Business Tower / Headquarters (Enlarged Skyscraper with Helipad)
@@ -2377,9 +2348,9 @@
     addBox(helipad, 1.8, 0.12, 0.12, MAT.steel, -1.6, 1.3, -2.4);
     tower.add(helipad);
 
-    addBuildingLabel(tower, 'tower', 26.0);
-    addHitbox(tower, 15.0, 32.0, 15.0, 16.0);
-    scaleBuilding(tower, 'tower', 1.55, 1.75, 1.55);
+    addBuildingLabel(tower, 'tower', 27.0);
+    addHitbox(tower, 14.0, 30.0, 14.0, 15.0);
+    scaleBuilding(tower, 'tower', 1.05, 1.35, 1.05);
 
     // ------------------------------------------------------------
     // 04 — Logistics Hub (Enlarged Mega Multimodal Distribution Terminal)
@@ -2433,9 +2404,9 @@
       addBox(logistics, 1.6, 1.25, 4.2, cyMat, 5.2, 0.75 + (c % 2) * 1.3, -2.5 + Math.floor(c / 2) * 4.6);
     }
 
-    addBuildingLabel(logistics, 'logistics', 7.5);
-    addHitbox(logistics, 19.5, 10.0, 15.5, 5.0);
-    scaleBuilding(logistics, 'logistics', 1.7, 1.6, 1.7);
+    addBuildingLabel(logistics, 'logistics', 8.5);
+    addHitbox(logistics, 17.5, 9.0, 14.5, 4.5);
+    scaleBuilding(logistics, 'logistics', 1.05, 1.05, 1.05);
 
     function createSteelTruck(parent, x, z, ry = 0, options = {}) {
       const g = new THREE.Group();
@@ -2889,10 +2860,10 @@
     // VEHICLE COLLISION DETECTION & PHYSICS BARRIERS
     // ============================================================
     const collisionBoxes = [
-      { minX: -33.8, maxX: -16.2, minZ: -36.8, maxZ: -19.2, name: 'Factory' },
-      { minX: 16.2, maxX: 33.8, minZ: -36.8, maxZ: -19.2, name: 'Hackathon Hub' },
-      { minX: -33.8, maxX: -16.2, minZ: 19.2, maxZ: 36.8, name: 'Logistics' },
-      { minX: 16.2, maxX: 33.8, minZ: 19.2, maxZ: 36.8, name: 'Business Tower' },
+      { minX: -33.2, maxX: -16.8, minZ: -35.2, maxZ: -21.0, name: 'Factory' },
+      { minX: 17.0, maxX: 33.0, minZ: -35.2, maxZ: -20.8, name: 'Hackathon Hub' },
+      { minX: -33.5, maxX: -16.5, minZ: 20.8, maxZ: 35.2, name: 'Logistics' },
+      { minX: 17.5, maxX: 32.5, minZ: 20.8, maxZ: 35.2, name: 'Business Tower' },
       { minX: -9.5, maxX: -3.9, minZ: -24.0, maxZ: -20.0, name: 'Metro Pavilion' },
       { minX: -9.5, maxX: -3.9, minZ: -36.5, maxZ: -29.5, name: 'North Workshop' },
       { minX: 3.9, maxX: 9.5, minZ: -27.5, maxZ: -20.5, name: 'Tech Incubator' },
@@ -2908,9 +2879,9 @@
     ];
 
     function checkVehicleCollision(x, z, radius = 0.85) {
-      // 1. Central Roundabout Island (radius 5.2m + vehicle radius = 6.05m)
+      // 1. Central Roundabout Island (radius 5.5m island curb)
       const distCenter = Math.hypot(x, z);
-      if (distCenter < 5.95) {
+      if (distCenter < 5.65) {
         return { hit: true, nx: x / distCenter, nz: z / distCenter };
       }
       // 2. City Deck Bounds
@@ -2937,18 +2908,27 @@
       return null;
     }
 
+    const sparkGeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+    const sparkMat = basicGlow(0xffbe3b, 0.95);
+    const sparkPool = [];
     function createImpactSparks(x, y, z) {
-      const sparkGroup = new THREE.Group();
-      sparkGroup.position.set(x, y, z);
-      const sparkMat = basicGlow(0xffbe3b, 0.95);
-      for (let i = 0; i < 6; i++) {
-        const s = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), sparkMat);
-        const ang = (i / 6) * Math.PI * 2;
-        s.position.set(Math.cos(ang) * 0.25, Math.random() * 0.2, Math.sin(ang) * 0.25);
-        sparkGroup.add(s);
+      const sparkGroup = sparkPool.pop() || new THREE.Group();
+      if (!sparkGroup.children.length) {
+        for (let i = 0; i < 6; i++) {
+          const s = new THREE.Mesh(sparkGeo, sparkMat);
+          sparkGroup.add(s);
+        }
       }
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2;
+        sparkGroup.children[i].position.set(Math.cos(ang) * 0.25, Math.random() * 0.2, Math.sin(ang) * 0.25);
+      }
+      sparkGroup.position.set(x, y, z);
       CITY.add(sparkGroup);
-      setTimeout(() => CITY.remove(sparkGroup), 180);
+      setTimeout(() => {
+        CITY.remove(sparkGroup);
+        if (sparkPool.length < 6) sparkPool.push(sparkGroup);
+      }, 180);
     }
 
     function updateSteerableVehicle(delta) {
@@ -3042,10 +3022,10 @@
     // FACTORY SUPPLY-CHAIN LOGISTICS: UNLOADING LKW FROM HARBOR & RACK STORAGE
     // ------------------------------------------------------------
     const dockGroup = new THREE.Group();
-    dockGroup.position.set(-25.0, 0.05, -19.5);
+    dockGroup.position.set(-25.0, 0.05, -21.6);
     CITY.add(dockGroup);
 
-    // 1. Factory Loading Bay Gate (Architectural Roll-Up Portal on south facade)
+    // 1. Factory Loading Bay Gate (Architectural Roll-Up Portal integrated into south facade)
     const torFrame = new THREE.Group();
     torFrame.position.set(0, 0, -0.6);
     // Hollow Deep Loading Bay Tunnel (depth 3.6m into factory)
@@ -3069,9 +3049,9 @@
     addSphere(torFrame, 0.11, basicGlow(0x6fe3a8, 1.8), 1.9, 3.1, 0.22);
     dockGroup.add(torFrame);
 
-    // 2. High-Bay Storage Pallet Rack inside the Bay (at z = -2.7)
+    // 2. High-Bay Storage Pallet Rack inside the Bay (at z = -2.6)
     const insideRack = new THREE.Group();
-    insideRack.position.set(0, 0, -2.7);
+    insideRack.position.set(0, 0, -2.6);
     const rackFrameMat = standard(0x1a2832, { roughness: 0.65, metalness: 0.35 });
     const shelfBeamMat = standard(0xd9571e, { roughness: 0.5, metalness: 0.2 });
     // Steel uprights
@@ -3086,8 +3066,8 @@
     });
     dockGroup.add(insideRack);
 
-    // 3. Flatbed Delivery LKW from Harbor parked on Freight Street (z = 4.8 relative to dock)
-    createSteelTruck(dockGroup, 0, 4.8, 0, { color: 0x1a3d52, cargo: 'coils' });
+    // 3. Flatbed Delivery LKW from Harbor parked on Factory Apron (z = 3.6 relative to dock)
+    createSteelTruck(dockGroup, 0, 3.6, 0, { color: 0x1a3d52, cargo: 'coils' });
 
     // 4. Stored Pallets on the Rack Shelves
     const rackPalletA = new THREE.Group();
@@ -3098,7 +3078,7 @@
 
     // 5. Cargo Pallet on the Truck Bed (to be unloaded)
     const truckPallet = new THREE.Group();
-    truckPallet.position.set(0, 0.88, 3.0);
+    truckPallet.position.set(0, 0.88, 1.8);
     addBox(truckPallet, 1.2, 0.12, 0.9, standard(0x6c5138), 0, 0.06, 0);
     addCylinder(truckPallet, 0.38, 0.38, 0.8, 12, standard(0xa8bcc8, { metalness: 0.8, roughness: 0.3 }), 0, 0.44, 0, { rx: Math.PI / 2 });
     dockGroup.add(truckPallet);
@@ -5278,96 +5258,89 @@
         animated.radar.rotation.y = elapsed * 0.55;
       }
 
-      // Interior working life
-      animated.typing.forEach((person) => {
-        const beat = elapsed * 6.2 + person.phase;
-        person.arms[0].rotation.x = 1.02 + Math.sin(beat) * 0.085;
-        person.arms[1].rotation.x = 1.02 + Math.sin(beat + 1.7) * 0.085;
-        person.arms[0].rotation.z = -0.09 + Math.sin(beat * 0.57) * 0.025;
-        person.arms[1].rotation.z = 0.09 - Math.sin(beat * 0.53) * 0.025;
-        person.head.rotation.x = Math.sin(elapsed * 1.3 + person.phase) * 0.022;
-        person.head.rotation.y = Math.sin(elapsed * 0.72 + person.phase) * 0.045;
-        person.group.position.y = Math.sin(elapsed * 1.4 + person.phase) * 0.003;
-      });
-
-      animated.interiorLeds.forEach((led) => {
-        const pulse = 0.5 + 0.5 * Math.sin(elapsed * 3.4 + led.phase);
-        led.material.emissiveIntensity = 0.45 + pulse * 1.25;
-      });
-
-      animated.machineSpin.forEach((machine) => {
-        machine.object.rotation[machine.axis] += delta * machine.speed;
-      });
-      animated.machineSlides.forEach((machine) => {
-        machine.object.position.y = machine.baseY + Math.sin(elapsed * machine.speed + machine.phase) * machine.amplitude;
-      });
-
-      animated.robots.forEach((robot) => {
-        robot.turret.rotation.y = Math.sin(elapsed * 0.58 + robot.phase) * 0.7;
-        robot.lower.rotation.z = robot.baseLower + Math.sin(elapsed * 0.8 + robot.phase) * 0.09;
-        robot.upper.rotation.z = robot.baseUpper + Math.sin(elapsed * 0.92 + robot.phase + 1.1) * 0.18;
-        robot.wrist.rotation.z = -1.2 + Math.sin(elapsed * 1.2 + robot.phase + 2.1) * 0.3;
-      });
-
-      animated.beltItems.forEach((belt) => {
-        belt.items.forEach((item, index) => {
-          const progress = (elapsed * belt.speed + index / belt.items.length) % 1;
-          item.position.x = -belt.length / 2 + 0.32 + progress * (belt.length - 0.64);
-          item.position.y = 1.06 + Math.sin(elapsed * 8 + index) * 0.008;
+      // Interior working life (only simulated when inside a building)
+      if (selectedKey) {
+        animated.typing.forEach((person) => {
+          const beat = elapsed * 6.2 + person.phase;
+          person.arms[0].rotation.x = 1.02 + Math.sin(beat) * 0.085;
+          person.arms[1].rotation.x = 1.02 + Math.sin(beat + 1.7) * 0.085;
+          person.arms[0].rotation.z = -0.09 + Math.sin(beat * 0.57) * 0.025;
+          person.arms[1].rotation.z = 0.09 - Math.sin(beat * 0.53) * 0.025;
+          person.head.rotation.x = Math.sin(elapsed * 1.3 + person.phase) * 0.022;
+          person.head.rotation.y = Math.sin(elapsed * 0.72 + person.phase) * 0.045;
+          person.group.position.y = Math.sin(elapsed * 1.4 + person.phase) * 0.003;
         });
-      });
 
-      animated.forklifts.forEach((forklift) => {
-        const cycle = (elapsed * forklift.speed + forklift.phase) % 2;
-        const progress = cycle < 1 ? cycle : 2 - cycle;
-        const wobble = Math.sin(elapsed * 0.32 + forklift.phase) * 0.055;
-        if (forklift.axis === 'x') {
-          forklift.group.position.x = forklift.x + progress * forklift.range;
-          forklift.group.position.z = forklift.z + wobble;
-          forklift.group.rotation.y = cycle < 1 ? -Math.PI / 2 : Math.PI / 2;
-        } else {
-          forklift.group.position.z = forklift.z - progress * forklift.range;
-          forklift.group.position.x = forklift.x + wobble;
-          forklift.group.rotation.y = cycle < 1 ? 0 : Math.PI;
+        animated.interiorLeds.forEach((led) => {
+          const pulse = 0.5 + 0.5 * Math.sin(elapsed * 3.4 + led.phase);
+          led.material.emissiveIntensity = 0.45 + pulse * 1.25;
+        });
+
+        animated.machineSpin.forEach((machine) => {
+          machine.object.rotation[machine.axis] += delta * machine.speed;
+        });
+        animated.machineSlides.forEach((machine) => {
+          machine.object.position.y = machine.baseY + Math.sin(elapsed * machine.speed + machine.phase) * machine.amplitude;
+        });
+
+        animated.robots.forEach((robot) => {
+          robot.turret.rotation.y = Math.sin(elapsed * 0.58 + robot.phase) * 0.7;
+          robot.lower.rotation.z = robot.baseLower + Math.sin(elapsed * 0.8 + robot.phase) * 0.09;
+          robot.upper.rotation.z = robot.baseUpper + Math.sin(elapsed * 0.92 + robot.phase + 1.1) * 0.18;
+          robot.wrist.rotation.z = -1.2 + Math.sin(elapsed * 1.2 + robot.phase + 2.1) * 0.3;
+        });
+
+        animated.beltItems.forEach((belt) => {
+          belt.items.forEach((item, index) => {
+            const progress = (elapsed * belt.speed + index / belt.items.length) % 1;
+            item.position.x = -belt.length / 2 + 0.32 + progress * (belt.length - 0.64);
+            item.position.y = 1.06 + Math.sin(elapsed * 8 + index) * 0.008;
+            item.visible = progress > 0.06 && progress < 0.94;
+          });
+        });
+
+        animated.forklifts.forEach((forklift) => {
+          const cycle = (elapsed * forklift.speed + forklift.phase) % 2;
+          const progress = cycle < 1 ? cycle : 2 - cycle;
+          const wobble = Math.sin(elapsed * 0.32 + forklift.phase) * 0.055;
+          if (forklift.axis === 'x') {
+            forklift.group.position.x = forklift.x + progress * forklift.range;
+            forklift.group.position.z = forklift.z + wobble;
+            forklift.group.rotation.y = cycle < 1 ? -Math.PI / 2 : Math.PI / 2;
+          } else {
+            forklift.group.position.z = forklift.z - progress * forklift.range;
+            forklift.group.position.x = forklift.x + wobble;
+            forklift.group.rotation.y = cycle < 1 ? 0 : Math.PI;
+          }
+          forklift.carriage.position.y = forklift.baseCarriageY + 0.12 + Math.sin(elapsed * 0.75 + forklift.phase) * 0.08;
+        });
+
+        animated.agvs.forEach((agv) => {
+          const cycle = (elapsed * agv.speed + agv.phase) % 2;
+          const progress = cycle < 1 ? cycle : 2 - cycle;
+          const wobble = Math.sin(elapsed * 0.42 + agv.phase) * 0.03;
+          if (agv.axis === 'z') {
+            agv.group.position.z = agv.baseZ - progress * agv.range;
+            agv.group.position.x = agv.baseX + wobble;
+            agv.group.rotation.y = cycle < 1 ? Math.PI : 0;
+          } else {
+            agv.group.position.x = agv.baseX + progress * agv.range;
+            agv.group.position.z = agv.baseZ + wobble;
+            agv.group.rotation.y = cycle < 1 ? Math.PI / 2 : -Math.PI / 2;
+          }
+        });
+
+        if (animated.aisleCrane) {
+          const crane = animated.aisleCrane;
+          crane.bridge.position.z = 0.85 + Math.sin(elapsed * 0.19) * 2.2;
+          crane.trolley.position.x = Math.sin(elapsed * 0.33 + 0.6) * 4.5;
+          crane.hoist.position.y = -0.3 + Math.sin(elapsed * 0.5 + 1.2) * 0.35;
         }
-        forklift.carriage.position.y = forklift.baseCarriageY + 0.12 + Math.sin(elapsed * 0.75 + forklift.phase) * 0.08;
-      });
-
-      animated.agvs.forEach((agv) => {
-        const cycle = (elapsed * agv.speed + agv.phase) % 2;
-        const progress = cycle < 1 ? cycle : 2 - cycle;
-        const wobble = Math.sin(elapsed * 0.42 + agv.phase) * 0.03;
-        if (agv.axis === 'z') {
-          agv.group.position.z = agv.baseZ - progress * agv.range;
-          agv.group.position.x = agv.baseX + wobble;
-          agv.group.rotation.y = cycle < 1 ? Math.PI : 0;
-        } else {
-          agv.group.position.x = agv.baseX + progress * agv.range;
-          agv.group.position.z = agv.baseZ + wobble;
-          agv.group.rotation.y = cycle < 1 ? Math.PI / 2 : -Math.PI / 2;
-        }
-      });
-
-      if (animated.aisleCrane) {
-        const crane = animated.aisleCrane;
-        crane.bridge.position.z = 0.85 + Math.sin(elapsed * 0.19) * 2.2;
-        crane.trolley.position.x = Math.sin(elapsed * 0.33 + 0.6) * 4.5;
-        crane.hoist.position.y = -0.3 + Math.sin(elapsed * 0.5 + 1.2) * 0.35;
       }
 
-      // Harbor water procedural waves
-      if (animated.harborWater) {
-        const geo = animated.harborWater.geometry;
-        const pos = geo.attributes.position;
-        const base = geo.userData.base;
-        for (let i = 0; i < pos.count; i++) {
-          const bx = base[i * 3];
-          const bz = base[i * 3 + 2];
-          const wave = Math.sin(bx * 0.38 + elapsed * 1.7) * 0.08 + Math.cos(bz * 0.32 + elapsed * 1.3) * 0.06;
-          pos.setY(i, wave);
-        }
-        pos.needsUpdate = true;
-        geo.computeVertexNormals();
+      // Harbor water procedural waves (GPU Vertex Shader driven)
+      if (oceanMat.userData.shader) {
+        oceanMat.userData.shader.uniforms.uTime.value = elapsed;
       }
 
       // Harbor ships bobbing
@@ -5439,37 +5412,37 @@
         const xPos = 0;
 
         if (cycleProgress < 0.34) {
-          // 1. Drive forward out of the loading bay to the parked truck
+          // 1. Drive forward out through the open roll-up portal to the parked truck
           const p = cycleProgress / 0.34;
-          zPos = -2.1 + p * 4.2; // -2.1 -> +2.1
+          zPos = -2.0 + p * 3.8; // -2.0 -> +1.8
           forkY = 0.35;
           heading = 0;
           carrying = false;
         } else if (cycleProgress < 0.44) {
           // 2. Lift coil pallet off the truck bed
           const p = (cycleProgress - 0.34) / 0.10;
-          zPos = 2.1;
+          zPos = 1.8;
           forkY = 0.35 + p * 0.60;
           heading = 0;
           carrying = true;
         } else if (cycleProgress < 0.78) {
           // 3. Reverse straight back through the roll-up gate into the bay
           const p = (cycleProgress - 0.44) / 0.34;
-          zPos = 2.1 - p * 4.2; // +2.1 -> -2.1
+          zPos = 1.8 - p * 3.8; // +1.8 -> -2.0
           forkY = 0.95;
           heading = 0;
           carrying = true;
         } else if (cycleProgress < 0.90) {
           // 4. Raise forks to shelf tier inside the rack
           const p = (cycleProgress - 0.78) / 0.12;
-          zPos = -2.1;
+          zPos = -2.0;
           forkY = 0.95 + p * 0.70; // 0.95 -> 1.65
           heading = 0;
           carrying = p < 0.75;
         } else {
           // 5. Lower empty carriage back to starting position
           const p = (cycleProgress - 0.90) / 0.10;
-          zPos = -2.1;
+          zPos = -2.0;
           forkY = 1.65 - p * 1.30;
           heading = 0;
           carrying = false;
