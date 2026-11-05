@@ -764,7 +764,7 @@
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x071420, 160, 560);
 
-    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 750);
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 750);
     const homeTarget = new THREE.Vector3(0, 1.2, 0);
     const homeDir = new THREE.Vector3(0.5, 0.69, 0.68).normalize();
     const focusDir = new THREE.Vector3(0.3, 0.52, 0.8).normalize();
@@ -1385,45 +1385,45 @@
       animated.buoys.push({ mesh: buoy, baseY: -0.58, phase: bIdx * 1.3, light: bPoint });
     });
 
-    // 6. Regional Highway Corridors
+    // 6. Regional East Avenue (Uniform 5.2m width matching the City Street Grid)
     const eastHwy = new THREE.Group();
-    addBox(eastHwy, 192, 0.25, 11.2, MAT.road, 124, 0.12, 0, { cast: false });
-    addBox(eastHwy, 192, 0.35, 0.6, MAT.metalDark, 124, 0.35, 0, { cast: false });
-    // Highway Yellow Centerlines & White Lane Markers
-    addBox(eastHwy, 190, 0.018, 0.14, MAT.warmLine, 124, 0.254, -0.09, { cast: false });
-    addBox(eastHwy, 190, 0.018, 0.14, MAT.warmLine, 124, 0.254, 0.09, { cast: false });
-    for (let px = 38; px <= 210; px += 4.5) {
-      addBox(eastHwy, 2.2, 0.018, 0.12, MAT.whiteLine, px, 0.254, -2.8, { cast: false });
-      addBox(eastHwy, 2.2, 0.018, 0.12, MAT.whiteLine, px, 0.254, 2.8, { cast: false });
+    // 5.2m Uniform Avenue extending to eastern industrial park
+    addBox(eastHwy, 150, 0.05, 5.2, roadMat, 117, 0.025, 0, { cast: false });
+    // Granite curbs along both edges
+    addBox(eastHwy, 150, 0.08, 0.20, curbMat, 117, 0.06, -2.70, { cast: false });
+    addBox(eastHwy, 150, 0.08, 0.20, curbMat, 117, 0.06, 2.70, { cast: false });
+    // Double yellow centerlines
+    addBox(eastHwy, 148, 0.015, 0.12, yellowMarkingMat, 117, 0.065, -0.10, { cast: false });
+    addBox(eastHwy, 148, 0.015, 0.12, yellowMarkingMat, 117, 0.065, 0.10, { cast: false });
+    // White dashed lane markers
+    for (let px = 44; px <= 190; px += 5.5) {
+      addBox(eastHwy, 2.2, 0.015, 0.12, whiteMarkingMat, px, 0.065, -1.35, { cast: false });
+      addBox(eastHwy, 2.2, 0.015, 0.12, whiteMarkingMat, px, 0.065, 1.35, { cast: false });
     }
-    for (let px = 55; px <= 190; px += 28) {
-      addCylinder(eastHwy, 0.45, 0.45, 0.4, 8, MAT.concrete, px, -0.15, -4.8);
-      addCylinder(eastHwy, 0.45, 0.45, 0.4, 8, MAT.concrete, px, -0.15, 4.8);
-      addLamp(px, -5.8, 0xffdcae);
-      addLamp(px, 5.8, 0xffdcae);
+    // Street lamps along the avenue
+    for (let px = 55; px <= 185; px += 32) {
+      addLamp(px, -3.2, 0xffdcae);
+      addLamp(px, 3.2, 0xffdcae);
     }
+    // Matching 5.6m Overhead Electronic Transit Sign
     const gantry = new THREE.Group();
-    gantry.position.set(62, 0.15, 0);
-    addBox(gantry, 0.3, 4.6, 0.3, MAT.steel, 0, 2.3, -5.4);
-    addBox(gantry, 0.3, 4.6, 0.3, MAT.steel, 0, 2.3, 5.4);
-    addBox(gantry, 0.45, 0.5, 11.4, MAT.steel, 0, 4.5, 0);
-    addBox(gantry, 0.08, 1.4, 4.2, standard(0x0e5830, { roughness: 0.6 }), -0.22, 4.2, -2.4);
-    addBox(gantry, 0.09, 0.12, 3.8, basicGlow(0xffffff, 0.9), -0.23, 4.4, -2.4, { cast: false });
-    addBox(gantry, 0.09, 0.12, 3.2, basicGlow(0x9df6ff, 0.8), -0.23, 3.9, -2.4, { cast: false });
-    addBox(gantry, 0.08, 1.4, 4.2, standard(0x0a3d62, { roughness: 0.6 }), -0.22, 4.2, 2.4);
-    addBox(gantry, 0.09, 0.12, 3.8, basicGlow(0xffffff, 0.9), -0.23, 4.4, 2.4, { cast: false });
-    addBox(gantry, 0.09, 0.12, 3.2, basicGlow(0xffd37a, 0.8), -0.23, 3.9, 2.4, { cast: false });
+    gantry.position.set(62, 0.05, 0);
+    addBox(gantry, 0.22, 3.8, 0.22, MAT.steel, 0, 1.9, -2.85);
+    addBox(gantry, 0.22, 3.8, 0.22, MAT.steel, 0, 1.9, 2.85);
+    addBox(gantry, 0.35, 0.38, 5.8, MAT.steel, 0, 3.7, 0);
+    addBox(gantry, 0.06, 0.9, 2.4, standard(0x0e5830, { roughness: 0.6 }), -0.18, 3.5, -1.2);
+    addBox(gantry, 0.07, 0.10, 2.2, basicGlow(0xffffff, 0.9), -0.19, 3.65, -1.2, { cast: false });
+    addBox(gantry, 0.06, 0.9, 2.4, standard(0x0a3d62, { roughness: 0.6 }), -0.18, 3.5, 1.2);
+    addBox(gantry, 0.07, 0.10, 2.2, basicGlow(0xffffff, 0.9), -0.19, 3.65, 1.2, { cast: false });
     eastHwy.add(gantry);
     mainlandGroup.add(eastHwy);
 
-    addBox(mainlandGroup, 8.6, 0.18, 180, MAT.road, 0, 0.08, -140, { cast: false });
-    addBox(mainlandGroup, 8.6, 0.18, 180, MAT.road, 0, 0.08, 140, { cast: false });
-
+    // Cars driving on the 5.2m uniform regional avenue
     for (let i = 0; i < 4; i++) {
-      const hwCar = addBox(eastHwy, 1.8, 0.65, 0.9, standard(i % 2 === 0 ? 0x23495d : 0x8b3529, { roughness: 0.4 }), 45 + i * 36, 0.52, i % 2 === 0 ? -2.4 : 2.4);
+      const hwCar = addBox(eastHwy, 1.8, 0.65, 0.9, standard(i % 2 === 0 ? 0x23495d : 0x8b3529, { roughness: 0.4 }), 45 + i * 36, 0.45, i % 2 === 0 ? -1.35 : 1.35);
       addBox(hwCar, 0.04, 0.16, 0.7, basicGlow(0xfff5c0, 1.1), -0.92, 0.0, 0, { cast: false });
       addBox(hwCar, 0.04, 0.14, 0.7, basicGlow(0xff3333, 1.1), 0.92, 0.0, 0, { cast: false });
-      animated.highwayVehicles.push({ mesh: hwCar, speed: 12 + i * 3, laneZ: i % 2 === 0 ? -2.4 : 2.4, minX: 42, maxX: 195 });
+      animated.highwayVehicles.push({ mesh: hwCar, speed: 12 + i * 3, laneZ: i % 2 === 0 ? -1.35 : 1.35, minX: 42, maxX: 190 });
     }
 
     // 7. Steel Lattice High-Voltage Transmission Pylons
@@ -1474,18 +1474,18 @@
     const cityD = 108;
     const cityCenterX = 8;
     const cityCenterZ = 0;
-    // Base foundation plinth (top surface at y = 0.00)
-    addBox(cityBase, cityW + 4, 0.8, cityD + 4, MAT.base, cityCenterX, -0.4, cityCenterZ);
+    // Lower foundation plinth (top surface at y = -0.06, no z-fighting with terrain)
+    addBox(cityBase, cityW + 2, 0.6, cityD + 2, MAT.base, cityCenterX, -0.36, cityCenterZ);
     // Ground terrain plate (top surface at y = 0.00)
-    addBox(cityBase, cityW, 0.10, cityD, standard(0x131e26, { roughness: 0.88 }), cityCenterX, -0.05, cityCenterZ, { cast: false });
+    addBox(cityBase, cityW, 0.06, cityD, standard(0x111b22, { roughness: 0.9 }), cityCenterX, -0.03, cityCenterZ, { cast: false });
 
     // ------------------------------------------------------------
-    // STRATEGIC STREET GRID (Streets between Blocks, Zero Collisions)
+    // STRATEGIC STREET GRID (100% Uniform 5.2m Width for All Streets)
     // ------------------------------------------------------------
     const EW_STREETS = [
       { z: -42.0, w: 5.2, name: "North Industrial Boulevard", minX: -42, maxX: 42 },
       { z: -14.0, w: 5.2, name: "Midtown North Avenue", minX: -42, maxX: 42 },
-      { z: 0.0, w: 6.0, name: "Grand Central Boulevard", minX: -42, maxX: 58 },
+      { z: 0.0, w: 5.2, name: "Grand Central Boulevard", minX: -42, maxX: 42 },
       { z: 14.0, w: 5.2, name: "Midtown South Avenue", minX: -42, maxX: 42 },
       { z: 42.0, w: 5.2, name: "South Waterfront Boulevard", minX: -42, maxX: 42 }
     ];
@@ -1493,7 +1493,7 @@
     const NS_STREETS = [
       { x: -38.0, w: 5.2, name: "West Harbor Wharf Road", minZ: -42, maxZ: 42 },
       { x: -13.0, w: 5.2, name: "West Freight Corridor", minZ: -42, maxZ: 42 },
-      { x: 0.0, w: 6.0, name: "Grand Central Avenue", minZ: -42, maxZ: 42 },
+      { x: 0.0, w: 5.2, name: "Grand Central Avenue", minZ: -42, maxZ: 42 },
       { x: 13.0, w: 5.2, name: "East Innovation Corridor", minZ: -42, maxZ: 42 },
       { x: 38.0, w: 5.2, name: "East Metropolitan Expressway", minZ: -42, maxZ: 42 }
     ];
@@ -1506,18 +1506,9 @@
     const gutterMat = standard(0x080d11, { roughness: 0.92, metalness: 0.10 });
     const sidewalkMat = standard(0x1c2b36, { roughness: 0.82, metalness: 0.06 });
 
-    const yellowMarkingMat = new THREE.MeshBasicMaterial({
-      color: 0xffbe3b,
-      polygonOffset: true,
-      polygonOffsetFactor: -3.0,
-      polygonOffsetUnits: -4.0
-    });
-    const whiteMarkingMat = new THREE.MeshBasicMaterial({
-      color: 0xf5f8fa,
-      polygonOffset: true,
-      polygonOffsetFactor: -3.0,
-      polygonOffsetUnits: -4.0
-    });
+    // Crisp, Non-Flickering Road Markings (Physical 15mm clearance above asphalt)
+    const yellowMarkingMat = new THREE.MeshBasicMaterial({ color: 0xffbe3b });
+    const whiteMarkingMat = new THREE.MeshBasicMaterial({ color: 0xf5f8fa });
 
     // Helper: Build Raised Multi-Layer Street Ribbon with Granite Curbs & Gutters
     EW_STREETS.forEach((st) => {
@@ -1552,8 +1543,8 @@
         // 5. Double Yellow Center Divider (stopping safely before intersections and roundabout)
         const lineLen = Math.max(1.0, len - 3.5);
         const lineCx = isCenter && seg.minX > 0 ? cx + 1.0 : isCenter ? cx - 1.0 : cx;
-        addBox(cityBase, lineLen, 0.015, 0.12, yellowMarkingMat, lineCx, 0.058, st.z - 0.10, { cast: false });
-        addBox(cityBase, lineLen, 0.015, 0.12, yellowMarkingMat, lineCx, 0.058, st.z + 0.10, { cast: false });
+        addBox(cityBase, lineLen, 0.015, 0.12, yellowMarkingMat, lineCx, 0.065, st.z - 0.10, { cast: false });
+        addBox(cityBase, lineLen, 0.015, 0.12, yellowMarkingMat, lineCx, 0.065, st.z + 0.10, { cast: false });
 
         // Storm drain grates along the curb
         [-1, 1].forEach((dir) => {
@@ -1598,8 +1589,8 @@
         // 5. Double Yellow Center Divider
         const lineLen = Math.max(1.0, len - 3.5);
         const lineCz = isCenter && seg.minZ > 0 ? cz + 1.0 : isCenter ? cz - 1.0 : cz;
-        addBox(cityBase, 0.12, 0.015, lineLen, yellowMarkingMat, st.x - 0.10, 0.058, lineCz, { cast: false });
-        addBox(cityBase, 0.12, 0.015, lineLen, yellowMarkingMat, st.x + 0.10, 0.058, lineCz, { cast: false });
+        addBox(cityBase, 0.12, 0.015, lineLen, yellowMarkingMat, st.x - 0.10, 0.065, lineCz, { cast: false });
+        addBox(cityBase, 0.12, 0.015, lineLen, yellowMarkingMat, st.x + 0.10, 0.065, lineCz, { cast: false });
 
         // Cast iron manhole covers in outer lanes
         [-1, 1].forEach((dir) => {
@@ -1612,19 +1603,19 @@
     });
 
     // Dashed White Lane Dividers (cleanly spaced, excluding intersections & roundabout)
-    for (let x = -36; x <= 54; x += 5.5) {
+    for (let x = -36; x <= 36; x += 5.5) {
       if (Math.abs(x) > 11.5 && Math.abs(x - 13) > 3.8 && Math.abs(x + 13) > 3.8 && Math.abs(x + 38) > 3.8 && Math.abs(x - 38) > 3.8) {
         EW_STREETS.forEach((st) => {
-          addBox(cityBase, 2.2, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z - st.w * 0.28, { cast: false });
-          addBox(cityBase, 2.2, 0.015, 0.12, whiteMarkingMat, x, 0.058, st.z + st.w * 0.28, { cast: false });
+          addBox(cityBase, 2.2, 0.015, 0.12, whiteMarkingMat, x, 0.065, st.z - st.w * 0.28, { cast: false });
+          addBox(cityBase, 2.2, 0.015, 0.12, whiteMarkingMat, x, 0.065, st.z + st.w * 0.28, { cast: false });
         });
       }
     }
     for (let z = -38; z <= 38; z += 5.5) {
       if (Math.abs(z) > 11.5 && Math.abs(z - 14) > 3.8 && Math.abs(z + 14) > 3.8 && Math.abs(z + 42) > 3.8 && Math.abs(z - 42) > 3.8) {
         NS_STREETS.forEach((st) => {
-          addBox(cityBase, 0.12, 0.015, 2.2, whiteMarkingMat, st.x - st.w * 0.28, 0.058, z, { cast: false });
-          addBox(cityBase, 0.12, 0.015, 2.2, whiteMarkingMat, st.x + st.w * 0.28, 0.058, z, { cast: false });
+          addBox(cityBase, 0.12, 0.015, 2.2, whiteMarkingMat, st.x - st.w * 0.28, 0.065, z, { cast: false });
+          addBox(cityBase, 0.12, 0.015, 2.2, whiteMarkingMat, st.x + st.w * 0.28, 0.065, z, { cast: false });
         });
       }
     }
@@ -1639,12 +1630,12 @@
     ].forEach((pt) => {
       // Clean zebra crossing with stop bar
       for (let s = -2; s <= 2; s++) {
-        addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, pt.x + s * 0.75, 0.058, pt.z + 3.8, { cast: false });
-        addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, pt.x + s * 0.75, 0.058, pt.z - 3.8, { cast: false });
+        addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, pt.x + s * 0.75, 0.065, pt.z + 3.8, { cast: false });
+        addBox(cityBase, 0.42, 0.015, 1.8, whiteMarkingMat, pt.x + s * 0.75, 0.065, pt.z - 3.8, { cast: false });
       }
       // Transverse stop line
-      addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.058, pt.z + 4.9, { cast: false });
-      addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.058, pt.z - 4.9, { cast: false });
+      addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.065, pt.z + 4.9, { cast: false });
+      addBox(cityBase, 4.2, 0.015, 0.28, whiteMarkingMat, pt.x, 0.065, pt.z - 4.9, { cast: false });
     });
 
     // 2. Safe Roundabout Approach Crossings (Set back 14.5m with Raised Pedestrian Refuge Islands)
@@ -1667,13 +1658,13 @@
         [-1, 1].forEach((side) => {
           const sideX = app.x + side * 1.85;
           for (let s = -1; s <= 1; s++) {
-            addBox(cityBase, 0.40, 0.015, 1.8, whiteMarkingMat, sideX + s * 0.65, 0.058, app.z, { cast: false });
+            addBox(cityBase, 0.40, 0.015, 1.8, whiteMarkingMat, sideX + s * 0.65, 0.065, app.z, { cast: false });
           }
         });
         // Stop bar before crossing
         const stopZ = app.z + (app.z > 0 ? 1.6 : -1.6);
-        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x - 1.85, 0.058, stopZ, { cast: false });
-        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x + 1.85, 0.058, stopZ, { cast: false });
+        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x - 1.85, 0.065, stopZ, { cast: false });
+        addBox(cityBase, 2.2, 0.015, 0.26, whiteMarkingMat, app.x + 1.85, 0.065, stopZ, { cast: false });
       } else {
         // Center raised pedestrian refuge island (Mittelinsel)
         addBox(cityBase, 2.6, 0.12, 0.85, curbMat, app.x, 0.06, app.z, { cast: false });
@@ -1687,13 +1678,13 @@
         [-1, 1].forEach((side) => {
           const sideZ = app.z + side * 1.85;
           for (let s = -1; s <= 1; s++) {
-            addBox(cityBase, 1.8, 0.015, 0.40, whiteMarkingMat, app.x, 0.058, sideZ + s * 0.65, { cast: false });
+            addBox(cityBase, 1.8, 0.015, 0.40, whiteMarkingMat, app.x, 0.065, sideZ + s * 0.65, { cast: false });
           }
         });
         // Stop bar before crossing
         const stopX = app.x + (app.x > 0 ? 1.6 : -1.6);
-        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.058, app.z - 1.85, { cast: false });
-        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.058, app.z + 1.85, { cast: false });
+        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.065, app.z - 1.85, { cast: false });
+        addBox(cityBase, 0.26, 0.015, 2.2, whiteMarkingMat, stopX, 0.065, app.z + 1.85, { cast: false });
       }
     });
 
