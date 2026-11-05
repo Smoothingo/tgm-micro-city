@@ -522,23 +522,23 @@
       display: grid;
       place-items: center;
       background:
-        radial-gradient(ellipse at 55% 42%, rgba(18, 52, 68, 0.42), transparent 52%),
+        radial-gradient(ellipse at 50% 45%, rgba(14, 46, 62, 0.55), transparent 55%),
         #050a11;
-      transition: opacity 0.8s ease, visibility 0.8s ease;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s ease;
     }
     body.is-ready .loader { opacity: 0; visibility: hidden; pointer-events: none; }
-    .loader-core { display: flex; flex-direction: column; align-items: center; gap: 18px; }
-    .loader-orbit { position: relative; width: 46px; height: 46px; }
+    .loader-core { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 320px; }
+    .loader-orbit { position: relative; width: 44px; height: 44px; }
     .loader-orbit::before, .loader-orbit::after {
       content: "";
       position: absolute;
       inset: 0;
-      border: 1px solid rgba(75, 228, 255, 0.18);
+      border: 1px solid rgba(75, 228, 255, 0.2);
       border-radius: 50%;
     }
     .loader-orbit::after {
       inset: 8px;
-      border-color: rgba(255, 211, 122, 0.23);
+      border-color: rgba(255, 211, 122, 0.25);
       animation: spin 3.5s linear infinite reverse;
     }
     .loader-orbit span {
@@ -553,15 +553,42 @@
       box-shadow: 0 0 16px #4be4ff;
       animation: orbit 2.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
     }
+    .loader-pct {
+      font-family: var(--mono);
+      font-size: 26px;
+      font-weight: 600;
+      color: #9df6ff;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 20px rgba(75, 228, 255, 0.45);
+    }
+    .loader-bar-track {
+      width: 260px;
+      height: 4px;
+      background: rgba(75, 228, 255, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba(75, 228, 255, 0.22);
+    }
+    .loader-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #4be4ff, #ffd37a);
+      border-radius: 2px;
+      box-shadow: 0 0 12px #4be4ff;
+      transition: width 0.25s ease-out;
+    }
     .loader p {
       margin: 0;
-      color: #6f8a9c;
+      color: #7fa1b5;
       font-family: var(--mono);
-      font-size: 8.5px;
-      letter-spacing: 0.2em;
+      font-size: 9px;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
+      text-align: center;
+      line-height: 1.5;
     }
-    .loader small { display: block; margin-top: 5px; color: #3e5869; font-size: 7px; letter-spacing: 0.12em; text-align: center; }
+    .loader small { display: block; margin-top: 4px; color: #48667a; font-size: 7.5px; letter-spacing: 0.12em; text-align: center; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes orbit {
       0% { transform: rotate(0deg) translateX(21px); }
@@ -686,7 +713,11 @@
   <div class="loader" id="loader">
     <div class="loader-core">
       <div class="loader-orbit" aria-hidden="true"><span></span></div>
-      <p>Micro-City wird gebaut<small>PROCEDURAL CAMPUS / WEBGL</small></p>
+      <div class="loader-pct" id="loaderPct">0%</div>
+      <div class="loader-bar-track">
+        <div class="loader-bar-fill" id="loaderBar"></div>
+      </div>
+      <p id="loaderStatus">Micro-City wird gebaut...<small id="loaderSub">PROCEDURAL CAMPUS / WEBGL</small></p>
     </div>
   </div>
 
@@ -837,7 +868,28 @@
     const pickables = [];
     const selectRings = {};
     const labelSprites = {};
-    const animated = {
+        // ------------------------------------------------------------
+    // Dynamic Percentage Loading System
+    // ------------------------------------------------------------
+    const uiLoaderPct = document.getElementById('loaderPct');
+    const uiLoaderBar = document.getElementById('loaderBar');
+    const uiLoaderStatus = document.getElementById('loaderStatus');
+    const uiLoaderSub = document.getElementById('loaderSub');
+
+    function updateProgress(pct, statusText, subText) {
+      const p = Math.min(100, Math.round(pct));
+      if (uiLoaderPct) uiLoaderPct.textContent = `${p}%`;
+      if (uiLoaderBar) uiLoaderBar.style.width = `${p}%`;
+      if (statusText && uiLoaderStatus && uiLoaderStatus.firstChild) {
+        uiLoaderStatus.firstChild.textContent = statusText + ' ';
+      }
+      if (subText && uiLoaderSub) {
+        uiLoaderSub.textContent = subText;
+      }
+    }
+    updateProgress(15, 'Initialisiere WebGL-Engine & Canvas...', 'THREE.JS / PROCEDURAL ASSETS');
+
+    const animated = { dust: null,
       factoryDockForklift: null,
       trafficVehiclesFreight: [],
       trafficVehiclesInner: [],
@@ -1226,6 +1278,7 @@
     const mainlandGroup = new THREE.Group();
     mainlandGroup.userData.noBounds = true;
     CITY.add(mainlandGroup);
+    updateProgress(35, 'Topographie, Küste & Hafenbecken werden berechnet...', 'GEOMETRY / WATER SHADER');
 
     // 1. Continental Shelf Landmass (x: -26 to 240, z: -240 to 240)
     const mainlandGeo = new THREE.PlaneGeometry(266, 480, 16, 16);
@@ -1413,6 +1466,7 @@
     // ============================================================
     const cityBase = new THREE.Group();
     CITY.add(cityBase);
+    updateProgress(58, '24 Stadtblöcke & kollisionsfreies Straßennetz synthetisiert...', 'URBAN FABRIC / ROUNDABOUT');
 
     // City Base Deck (x: -44 to 60, z: -54 to 54)
     const cityW = 104;
@@ -1618,6 +1672,33 @@
       addTree(tx, tz, 0.9, 1);
     });
 
+    // Ambient floating monument energy particles
+    const dustCount = 140;
+    const dustPositions = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 0.4 + Math.random() * 3.4;
+      dustPositions[i * 3] = Math.cos(angle) * radius;
+      dustPositions[i * 3 + 1] = 0.9 + Math.random() * 4.2;
+      dustPositions[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    const dustGeometry = new THREE.BufferGeometry();
+    dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+    const dust = new THREE.Points(
+      dustGeometry,
+      new THREE.PointsMaterial({
+        color: 0x8ed9ee,
+        size: 0.05,
+        transparent: true,
+        opacity: 0.48,
+        depthWrite: false,
+        sizeAttenuation: true,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    plaza.add(dust);
+    animated.dust = dust;
+
     CITY.add(plaza);
 
     // ------------------------------------------------------------
@@ -1625,6 +1706,7 @@
     // ------------------------------------------------------------
     const urban = new THREE.Group();
     CITY.add(urban);
+    updateProgress(78, 'Begehbare Hallen, Hackathon-Arena & Logistik generiert...', 'BUILDINGS / INTERIORS');
 
     // Architectural Builders
     function addGlassOfficeTower(parent, x, z, w, d, h, accentColor = 0x4be4ff) {
@@ -3052,6 +3134,7 @@
       });
     }
     createDataLinks();
+    updateProgress(92, 'Multi-Circuit Verkehrsrouten & Physik initialisiert...', 'TRAFFIC / COLLISION PHYSICS');
 
     // ------------------------------------------------------------
     // Walk-in interiors
@@ -5224,7 +5307,7 @@
         tree.group.rotation.z = Math.sin(elapsed * 0.55 + tree.phase) * 0.007;
         tree.group.rotation.x = Math.cos(elapsed * 0.44 + tree.phase) * 0.005;
       });
-      dust.rotation.y = elapsed * 0.006;
+      if (animated.dust) animated.dust.rotation.y = elapsed * 0.006;
 
       // District selection rings
       Object.entries(selectRings).forEach(([key, ring]) => {
@@ -5280,11 +5363,12 @@
 
       if (firstFrame) {
         firstFrame = false;
-        requestAnimationFrame(() => {
+        updateProgress(100, 'Micro-City bereit!', 'INITIALISIERUNG ABGESCHLOSSEN');
+        window.setTimeout(() => {
           document.body.classList.add('is-ready');
           const loader = document.getElementById('loader');
-          window.setTimeout(() => loader?.remove(), 1150);
-        });
+          window.setTimeout(() => loader?.remove(), 950);
+        }, 300);
       }
     }
 
