@@ -4530,7 +4530,7 @@
 
       // West Table Props: Alternating 50/50 Laptops and Leather Notepads with Silver Pens & Coffee
       if (i % 2 === 0) {
-        addLaptop(towerG, -0.72, 0.782, zPos, Math.PI / 2, 'chart', i);
+        addLaptop(towerG, -0.72, 0.782, zPos, -Math.PI / 2, 'chart', i);
       } else {
         addBox(towerG, 0.38, 0.015, 0.30, standard(0x1a1512, { roughness: 0.6 }), -0.72, 0.78, zPos);
         addBox(towerG, 0.32, 0.018, 0.25, standard(0xf4f2ea, { roughness: 0.9 }), -0.72, 0.782, zPos);
@@ -4540,7 +4540,7 @@
 
       // East Table Props: Alternating 50/50 Laptops and Leather Notepads with Silver Pens & Coffee
       if (i % 2 === 1) {
-        addLaptop(towerG, 0.72, 0.782, zPos, -Math.PI / 2, 'chart', i + 1);
+        addLaptop(towerG, 0.72, 0.782, zPos, Math.PI / 2, 'chart', i + 1);
       } else {
         addBox(towerG, 0.38, 0.015, 0.30, standard(0x1a1512, { roughness: 0.6 }), 0.72, 0.78, zPos);
         addBox(towerG, 0.32, 0.018, 0.25, standard(0xf4f2ea, { roughness: 0.9 }), 0.72, 0.782, zPos);
@@ -4798,14 +4798,14 @@
     // ============================================================
     // AUTONOMOUS FLEET: 3 FORKLIFTS & 4 AGVS (Wide, non-overlapping lanes)
     // ============================================================
-    createForklift(logisticsG, 0x6fe3a8, { axis: 'z', x: -5.5, z: 2.5, range: 6.5, speed: 0.11, phase: 0.2 });
-    createForklift(logisticsG, 0xffd37a, { axis: 'z', x:  5.5, z: 2.0, range: 6.5, speed: 0.10, phase: 0.7 });
-    createForklift(logisticsG, 0x6fe3a8, { axis: 'x', x: -4.0, z: -4.0, range: 8.0, speed: 0.09, phase: 1.3 });
+    createForklift(logisticsG, 0x6fe3a8, { axis: 'z', x: -8.2, z: 4.5, range: 8.5, speed: 0.11, phase: 0.2 });
+    createForklift(logisticsG, 0xffd37a, { axis: 'z', x:  8.0, z: 4.5, range: 8.5, speed: 0.10, phase: 0.7 });
+    createForklift(logisticsG, 0x6fe3a8, { axis: 'x', x: -5.0, z: 1.0, range: 10.0, speed: 0.09, phase: 1.3 });
 
-    createAGV(logisticsG, 0x6fe3a8, { axis: 'x', x: -4.5, z: -1.8, range: 9.0, speed: 0.22, phase: 0.3 });
-    createAGV(logisticsG, 0xffd37a, { axis: 'x', x: -4.5, z:  4.2, range: 9.0, speed: 0.20, phase: 1.5 });
-    createAGV(logisticsG, 0x4be4ff, { axis: 'z', x: -1.8, z:  1.5, range: 5.5, speed: 0.18, phase: 2.0 });
-    createAGV(logisticsG, 0x6fe3a8, { axis: 'z', x:  1.8, z:  1.5, range: 5.5, speed: 0.19, phase: 0.8 });
+    createAGV(logisticsG, 0x6fe3a8, { axis: 'x', x: -5.0, z:  5.0, range: 10.0, speed: 0.20, phase: 0.3 });
+    createAGV(logisticsG, 0xffd37a, { axis: 'x', x: -5.0, z: -1.5, range: 10.0, speed: 0.18, phase: 1.5 });
+    createAGV(logisticsG, 0x4be4ff, { axis: 'z', x:  3.5, z:  3.5, range:  6.5, speed: 0.17, phase: 2.0 });
+    createAGV(logisticsG, 0x6fe3a8, { axis: 'z', x: -1.0, z:  3.5, range:  6.5, speed: 0.18, phase: 0.8 });
 
     // Logistics Dispatch Clerk Station
     addDesk(logisticsG, -8.5, 7.5, 2.2, 0.9, { accent: 0x6fe3a8 });
@@ -5015,6 +5015,7 @@
         controls.enabled = true;
       }
       Object.values(buildingGroups).forEach((b) => { b.visible = true; });
+      if (dockGroup) dockGroup.visible = false;
       if (!BUILDING_DATA[key] || !interiors[key]) return;
       if (selectedKey !== key) hideInteriors();
       interiors[key].group.visible = true;
@@ -5035,6 +5036,7 @@
         controls.enabled = true;
       }
       Object.values(buildingGroups).forEach((b) => { b.visible = true; });
+      if (dockGroup) dockGroup.visible = true;
       const wasInside = Boolean(selectedKey);
       selectedKey = null;
       hoveredKey = null;
@@ -5405,7 +5407,7 @@
       });
 
       // Factory Supply-Chain Dock Forklift Loop (Unloading LKW from Harbor & Storing in Rack)
-      if (animated.factoryDockForklift) {
+      if (animated.factoryDockForklift && !selectedKey) {
         const df = animated.factoryDockForklift;
         const cycleProgress = (elapsed * df.speed) % 1;
         let zPos, forkY, heading, carrying;
@@ -5548,10 +5550,12 @@
           controls.enabled = true;
           if (selectedKey) {
             if (buildingGroups[selectedKey]) buildingGroups[selectedKey].visible = false;
+            if (dockGroup) dockGroup.visible = false;
             clampToInterior(selectedKey);
             camera.lookAt(controls.target);
           } else {
             hideInteriors();
+            if (dockGroup) dockGroup.visible = true;
           }
           controls.update();
         }
